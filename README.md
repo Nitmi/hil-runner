@@ -1,0 +1,107 @@
+# HIL Runner
+
+HIL Runner 0.1.0 is a local candidate for **cooperative ownership coordination**
+between embedded Agents and test processes. This first stage acquires exclusive
+host leases from saved board-registry selections. It does not run hardware tests
+or call baud, BLEA, embedded-debugger, or arbitrary commands.
+
+The purpose is to keep participating clients from resetting/flashing one board
+while another client is observing it. The process holds OS file locks while it
+is alive; PID files, stale timestamps and lock-file deletion do not grant
+ownership. Runtime dependencies: none. Python 3.11+.
+
+## Develop and use
+
+```powershell
+uv sync --locked --extra dev
+uv run --locked hil-runner --version
+uv run --locked hil-runner lease plan selection.json --json
+uv run --locked hil-runner lease serve selection.json `
+  --selection-sha256 <hash-from-plan> `
+  --duration-seconds 300 --idle-timeout-seconds 60
+```
+
+Plan reads at most 256 KiB of saved `embedded-board-registry.selection.v1` JSON,
+validates its structure and exact observed transport identities, and reports
+the selection hash, canonical lease root and resource keys. It creates nothing,
+starts no component and does not revalidate the upstream registry/discovery
+files or currently connected hardware. Serve requires that hash so a changed
+selection fails before any lock files are created. No user confirmation prompt
+is added: hashing and lock ownership are machine checks, not authorization.
+
+Keep serve's stdin/stdout pipes open. Its first JSON line is `lease.open` and
+contains a new `lease_id`. Only these requests are accepted, one per line:
+
+```json
+{"id":"1","operation":"lease.status","lease_id":"lease_<from-open>"}
+{"id":"2","operation":"lease.close","lease_id":"lease_<from-open>"}
+```
+
+Successful status extends the **idle** deadline, never the maximum duration.
+Malformed or stale requests do not renew ownership. Close, EOF, idle timeout,
+duration expiry or request limits release host locks and exit. The terminal
+JSON reports the reason and whether host handles closed; it never claims native
+processes stopped or target cleanup succeeded. Use a parent process to keep this
+lease alive throughout the separately authorized native operations and cleanup.
+Do not close/kill the lease before those operations have ended.
+
+## Identity and namespace
+
+- Exact debug probe `VID:PID:serial` maps to `usb:VID:PID:SERIAL`.
+- Serial maps to the exact observed COM port (or canonical absolute Unix port)
+  plus the same USB key when complete VID/PID/serial fields are present. Partial
+  USB identity is rejected. Matching USB serial and debug interfaces conflict
+  even if one client selects debug only and another serial only.
+- BLE requires an observed MAC or UUID, not a name. It maps to `ble:IDENTIFIER`.
+  Private address rotation and aliases are not inferred.
+- USB and BLE hexadecimal/case variants normalize conservatively. Case folding
+  unusual USB serials can over-lock distinct devices; it avoids missing a conflict.
+- Logical board names, USB interface numbers and debug core/target do not split
+  ownership of one physical USB device. All resources are acquired in fixed
+  order with no wait/retry; partial acquisition is rolled back on any conflict.
+
+All participants must use the **same local lease root**. Defaults are
+`%LOCALAPPDATA%\embedded-hil-runner\leases` on Windows and
+`${XDG_STATE_HOME:-~/.local/state}/embedded-hil-runner/leases` on Unix. Override
+with `--lease-root` for an explicitly shared station namespace. Network/UNC
+roots are unsupported; mounted network filesystems are also outside the tested
+scope. Cross-user ACL setup and distributed device farms are not implemented.
+
+Lock files remain after close and process death. They contain no owner record;
+their existence does not mean busy. Never remove, rename, replace or hard-link
+these files/root while clients run: different inodes can defeat cooperation.
+Live status and periodic checks detect namespace replacement, but this is not
+protection against a malicious process with access to the directory.
+
+Native tools and clients that do not participate are not blocked by these
+locks. A crashed lease process cannot clean up an independently running native
+tool or prove a board safe. A new owner must perform fresh native identity,
+state and cleanup checks before hardware operations. This coordination layer
+does not bypass native device locks, bounded flash sessions or dangerous-action
+gates. It does not add per-flash user approval.
+
+Two disjoint transport selections may still describe one board behind separate
+USB adapters. Use the same complete multi-transport selection across cooperating
+clients; this stage cannot infer that physical topology from a board label.
+
+## Protocol, testing and delivery
+
+See [protocol](docs/protocol.md) and `schemas/result.schema.json`.
+
+```powershell
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv build
+```
+
+Tests use synthetic selections and real independent host processes; no hardware
+access is required. CI is configured for Windows/Ubuntu, Python 3.11/3.13.
+Windows local process tests establish this candidate's verified platform.
+Remote CI and Unix execution must pass before Unix compatibility is claimed.
+There is no GitHub Release, standalone binary, Toolkit catalog integration,
+test executor, power control, daemon/socket or remote lease broker in this stage.
+
+OS primitives follow the Python documentation for
+[Windows nonblocking region locks](https://docs.python.org/3/library/msvcrt.html#msvcrt.locking)
+and [Unix flock](https://docs.python.org/3/library/fcntl.html#fcntl.flock).

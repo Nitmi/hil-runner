@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:embedded-hil-runner:result:v1",
+  "title": "HIL Runner host lease result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ok", "operation", "request_id", "scope",
+    "hardware_access", "component_processes_started", "authorization_granted",
+    "target_cleanup_verified", "data", "errors"],
+  "properties": {
+    "schema_version": {"const": "embedded-hil-runner.result.v1"},
+    "ok": {"type": "boolean"},
+    "operation": {"enum": ["lease.plan", "lease.serve", "lease.open", "lease.status", "lease.close", "lease.closed", "lease.error"]},
+    "request_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[ -~]+$"}]},
+    "scope": {"const": "host_only_cooperative_leasing"},
+    "hardware_access": {"const": false},
+    "component_processes_started": {"const": false},
+    "authorization_granted": {"const": false},
+    "target_cleanup_verified": {"const": false},
+    "data": {"type": "object"},
+    "errors": {"type": "array", "maxItems": 1, "items": {
+      "type": "object", "additionalProperties": false, "required": ["code", "message"],
+      "properties": {
+        "code": {"enum": ["INVALID_INPUT", "PROTOCOL_ERROR", "RESOURCE_BUSY", "HOST_IO_ERROR"]},
+        "message": {"type": "string", "maxLength": 1024}
+      }
+    }}
+  },
+  "allOf": [
+    {"if": {"properties": {"ok": {"const": true}}}, "then": {"properties": {"errors": {"maxItems": 0}}},
+      "else": {"properties": {"errors": {"minItems": 1}}}},
+    {"if": {"properties": {"ok": {"const": true}, "operation": {"enum": ["lease.plan", "lease.open", "lease.status"]}}},
+      "then": {"properties": {"data": {"$ref": "#/$defs/plan"}}}},
+    {"if": {"properties": {"ok": {"const": true}, "operation": {"enum": ["lease.open", "lease.status"]}}},
+      "then": {"properties": {"data": {"$ref": "#/$defs/active"}}}},
+    {"if": {"properties": {"ok": {"const": true}, "operation": {"enum": ["lease.close", "lease.closed"]}}},
+      "then": {"properties": {"data": {"$ref": "#/$defs/released"}}}}
+  ],
+  "$defs": {
+    "resources": {"type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true,
+      "items": {"type": "string", "maxLength": 4352, "pattern": "^(usb:|serial-port:|ble:)"}},
+    "plan": {"type": "object", "required": ["board_id", "selection", "lease_root", "resources", "effects", "upstream_files_revalidated", "hardware_identity_verified"],
+      "properties": {
+        "board_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "selection": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+          "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+        "lease_root": {"type": "string"}, "resources": {"$ref": "#/$defs/resources"},
+        "effects": {"type": "array", "uniqueItems": true, "maxItems": 2, "items": {"enum": ["host_lock_file_create", "host_exclusive_file_lock"]}},
+        "upstream_files_revalidated": {"const": false}, "hardware_identity_verified": {"const": false}
+      }},
+    "active": {"type": "object", "required": ["lease_id", "status", "owner_pid", "started_at", "duration_seconds", "idle_timeout_seconds", "remaining_ms", "ownership_scope"],
+      "properties": {"lease_id": {"type": "string", "pattern": "^lease_[0-9a-f]{32}$"},
+        "status": {"const": "active"}, "owner_pid": {"type": "integer", "minimum": 1},
+        "started_at": {"type": "string"}, "duration_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "idle_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "remaining_ms": {"type": "integer", "minimum": 0, "maximum": 3600000},
+        "ownership_scope": {"const": "participating_processes_using_same_local_lease_root"}}},
+    "released": {"type": "object", "required": ["lease_id", "status", "reason", "resources", "lease_root", "host_handles_closed", "lock_files_retained", "native_operations_stopped", "target_cleanup_verified"],
+      "properties": {"lease_id": {"type": "string", "pattern": "^lease_[0-9a-f]{32}$"},
+        "status": {"const": "released"}, "reason": {"type": "string"},
+        "resources": {"$ref": "#/$defs/resources"}, "lease_root": {"type": "string"},
+        "host_handles_closed": {"const": true}, "lock_files_retained": {"const": true},
+        "native_operations_stopped": {"const": false}, "target_cleanup_verified": {"const": false}}}
+  }
+}
