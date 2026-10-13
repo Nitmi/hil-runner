@@ -1,8 +1,16 @@
 # Repository guidance
 
 - Keep component hardware operations in baud, BLEA and embedded-debugger.
-- The first release implements host-only cooperative leases. Do not add arbitrary
-  commands, hardware discovery, device operations or automatic recovery.
+- Preserve the 0.1 host-only cooperative lease interface. Managed execution may
+  launch only fixed, hash-bound embedded-debugger flash-session and runtime
+  commands. Never add arbitrary commands or automatic recovery/retries.
+- Keep native confirmation, one-use scope markers, firmware windows, runtime
+  assertions and target cleanup in the native debugger. A managed plan grants
+  no authorization. Declare runtime reset-capture as an additional effect.
+- Keep ownership until all managed processes are observed stopped. Start Windows
+  children suspended, assign a kill-on-close Job before resuming, and retain
+  partial evidence on timeouts and process failures. Do not infer target cleanup
+  from killing host processes.
 - Bind leases to saved, exact identities. A lease is ownership coordination,
   never hardware identity verification or authorization.
 - Use nonblocking OS locks, roll back partial acquisition and retain lock files.

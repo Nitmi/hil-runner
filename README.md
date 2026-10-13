@@ -1,9 +1,12 @@
 # HIL Runner
 
-HIL Runner 0.1.0 is a local candidate for **cooperative ownership coordination**
-between embedded Agents and test processes. This first stage acquires exclusive
-host leases from saved board-registry selections. It does not run hardware tests
-or call baud, BLEA, embedded-debugger, or arbitrary commands.
+HIL Runner 0.2.0 is a local candidate for cooperative ownership and managed native
+flash/runtime execution. `lease` retains the host-only 0.1 interface described
+below. Windows `managed` holds that ownership across one native bounded flash
+session and per-build native runtime acceptance. An Agent can submit successive
+firmware builds under one approved scope without asking for each flash again.
+See [managed workflow](docs/managed.md) for its additional reset, exact input
+bindings, process containment and evidence contract.
 
 The purpose is to keep participating clients from resetting/flashing one board
 while another client is observing it. The process holds OS file locks while it
@@ -99,8 +102,11 @@ Tests use synthetic selections and real independent host processes; no hardware
 access is required. CI is configured for Windows/Ubuntu, Python 3.11/3.13.
 Windows local process tests establish this candidate's verified platform.
 Remote CI and Unix execution must pass before Unix compatibility is claimed.
-There is no GitHub Release, standalone binary, Toolkit catalog integration,
-test executor, power control, daemon/socket or remote lease broker in this stage.
+Managed tests require explicit native Replay settings and a compiled host-only
+baud fixture; the ordinary suite skips those integrations. Local Replay and fake
+UART results do not qualify physical boards. There is no GitHub Release,
+standalone binary, Toolkit catalog integration, power control, daemon/socket or
+remote lease broker in this stage.
 
 OS primitives follow the Python documentation for
 [Windows nonblocking region locks](https://docs.python.org/3/library/msvcrt.html#msvcrt.locking)

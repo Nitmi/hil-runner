@@ -8,6 +8,8 @@ from pathlib import Path
 from . import __version__
 from .common import HilError, report
 from .lease import Lease, bounds
+from .managed import execute, result
+from .managed_plan import compile_plan
 from .selection import selection_plan
 from .server import OutputPump, serve
 
@@ -21,7 +23,9 @@ def default_root() -> Path:
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(description="Host-only cooperative HIL resource leases.")
+    root = argparse.ArgumentParser(
+        description="Cooperative leases and bounded native HIL execution."
+    )
     root.add_argument("--version", action="version", version=f"hil-runner {__version__}")
     domains = root.add_subparsers(dest="domain", required=True)
     lease = domains.add_parser("lease")
@@ -35,11 +39,50 @@ def parser() -> argparse.ArgumentParser:
             item.add_argument("--selection-sha256", required=True)
             item.add_argument("--duration-seconds", type=int, default=300)
             item.add_argument("--idle-timeout-seconds", type=int, default=60)
+    managed = domains.add_parser("managed", help="fixed native flash/runtime execution")
+    managed_commands = managed.add_subparsers(dest="operation", required=True)
+    plan = managed_commands.add_parser(
+        "plan", help="prepare a hash-bound managed plan without processes"
+    )
+    plan.add_argument("spec", type=Path)
+    plan.add_argument("--output", type=Path, required=True)
+    plan.add_argument("--lease-root", type=Path, default=default_root())
+    plan.add_argument("--json", action="store_true")
+    serve_parser = managed_commands.add_parser(
+        "serve", help="one native scope across bounded builds"
+    )
+    serve_parser.add_argument("plan", type=Path)
+    serve_parser.add_argument("--plan-sha256", required=True)
+    serve_parser.add_argument("--confirm", required=True, help="once-approved native scope digest")
+    serve_parser.add_argument("--allow-runtime-reset", action="store_true")
+    serve_parser.add_argument("--output-dir", type=Path, required=True)
     return root
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.domain == "managed":
+        try:
+            if args.operation == "plan":
+                value = result(
+                    "managed.plan", data=compile_plan(args.spec, args.output, args.lease_root)
+                )
+                value["scope"] = "host_only_managed_preparation"
+                print(json.dumps(value, indent=2))
+                return 0
+            return execute(
+                args.plan,
+                args.plan_sha256,
+                args.confirm,
+                args.output_dir,
+                allow_runtime_reset=args.allow_runtime_reset,
+            )
+        except HilError as error:
+            value = result("managed." + args.operation, error=error)
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
+            value = result("managed." + args.operation, error=HilError("HOST_IO_ERROR", str(error)))
+        print(json.dumps(value))
+        return 2
     operation = "lease." + args.operation
     try:
         if args.operation == "serve":

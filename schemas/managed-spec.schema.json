@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:embedded-hil-runner:managed-spec:v1",
+  "title": "HIL Runner managed authoring specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "selection", "component_lock", "native_scope", "native_confirm_digest", "runtime_template", "replay_fixture", "limits"],
+  "properties": {
+    "schema_version": {"const": "embedded-hil-runner.managed-spec.v1"},
+    "selection": {"$ref": "#/$defs/path"},
+    "component_lock": {"$ref": "#/$defs/path"},
+    "native_scope": {"$ref": "#/$defs/path"},
+    "native_confirm_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_template": {"$ref": "#/$defs/path"},
+    "replay_fixture": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/path"}]},
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["duration_seconds", "idle_timeout_seconds", "native_timeout_seconds", "startup_timeout_seconds", "shutdown_timeout_seconds"],
+      "properties": {
+        "duration_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "idle_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "native_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 120},
+        "startup_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 10},
+        "shutdown_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 10}
+      }
+    }
+  },
+  "$defs": {"path": {"type": "string", "minLength": 1, "maxLength": 4096}}
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:embedded-hil-runner:managed-result:v1",
+  "title": "HIL Runner managed execution result",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "ok", "operation", "request_id", "scope", "authorization_granted", "component_processes_started", "hardware_access_possible", "native_target_operations_dispatched", "target_cleanup_verified", "data", "errors"],
+  "properties": {
+    "schema_version": {"const": "embedded-hil-runner.managed-result.v1"},
+    "ok": {"type": "boolean"},
+    "operation": {"enum": ["managed.plan", "managed.serve", "managed.ready", "managed.build", "managed.closed"]},
+    "request_id": {"type": ["string", "null"], "maxLength": 64},
+    "scope": {"enum": ["host_only_managed_preparation", "managed_native_component_execution"]},
+    "authorization_granted": {"const": false},
+    "component_processes_started": {"type": "boolean"},
+    "hardware_access_possible": {"type": "boolean"},
+    "native_target_operations_dispatched": {"type": "boolean"},
+    "target_cleanup_verified": {"const": false},
+    "data": {"type": "object"},
+    "errors": {"type": "array", "maxItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["code", "message"], "properties": {"code": {"type": "string", "minLength": 1}, "message": {"type": "string", "maxLength": 1024}}}}
+  },
+  "allOf": [
+    {"if": {"properties": {"ok": {"const": true}}}, "then": {"properties": {"errors": {"maxItems": 0}}}, "else": {"properties": {"errors": {"minItems": 1}}}},
+    {"if": {"properties": {"scope": {"const": "host_only_managed_preparation"}}}, "then": {"properties": {"component_processes_started": {"const": false}, "hardware_access_possible": {"const": false}, "native_target_operations_dispatched": {"const": false}}}}
+  ]
+}
