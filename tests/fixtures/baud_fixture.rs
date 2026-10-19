@@ -45,17 +45,19 @@ fn main() {
     } else if args.first().map(String::as_str) == Some("list") {
         println!("{{\"ok\":true,\"ports\":[{{\"device\":\"COM999\",\"vid\":65535,\"pid\":1,\"serial_number\":\"CI-A\",\"interface\":null}}]}}");
     } else if args.first().map(String::as_str) == Some("monitor") {
-        if fs::read_to_string(root.join("mode.txt"))
-            .unwrap_or_default()
-            .trim()
-            == "hang"
-        {
+        let mode = fs::read_to_string(root.join("mode.txt")).unwrap_or_default();
+        if mode.trim() == "hang" {
             thread::sleep(Duration::from_secs(60));
         }
         let build = fs::read_to_string(root.join("next-build.txt")).unwrap();
+        let post_ready = if mode.trim() == "pre-ready-heartbeats" {
+            "HIL_HEARTBEAT\n"
+        } else {
+            "HIL_HEARTBEAT\nHIL_HEARTBEAT\nHIL_HEARTBEAT\n"
+        };
         let text = format!(
-            "HIL_READY v1\n{}\nHIL_HEARTBEAT\nHIL_HEARTBEAT\nHIL_HEARTBEAT\n",
-            build.trim()
+            "HIL_HEARTBEAT\nHIL_HEARTBEAT\nHIL_READY v1\n{}\n{post_ready}",
+            build.trim(),
         );
         let directory = PathBuf::from(option(&args, "--log-dir"));
         fs::create_dir_all(&directory).unwrap();

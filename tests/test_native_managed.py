@@ -215,13 +215,22 @@ def test_native_two_builds_share_one_grant_and_preserve_transcript(tmp_path, fix
         ]
         assert len(rows) == 2 and all(row["operation"] == "flash" for row in rows)
         assert (tmp_path / "native-scope.json.active").exists()
+        for number in (1, 2):
+            evidence = tmp_path / f"build/run/build-{number:04d}/runtime.evidence.json"
+            assertions = json.loads(evidence.read_bytes())["assertions"]
+            assert assertions["heartbeat"]["observed"] == 3
+            assert assertions["readiness_window"]["policy"] == "after_last_complete_ready"
+            assert assertions["readiness_window"]["heartbeat_total"] == 5
+            assert assertions["readiness_window"]["heartbeat_excluded"] == 2
     finally:
         owner.dispose()
 
 
-def test_failed_runtime_stops_before_queued_second_build(tmp_path, fixture_program):
-    command, a, b = setup_native(tmp_path, fixture_program)
-    (tmp_path / "next-build.txt").write_text("WRONG_BUILD")
+@pytest.mark.parametrize("mode", ["normal", "pre-ready-heartbeats"])
+def test_failed_runtime_stops_before_queued_second_build(tmp_path, fixture_program, mode):
+    command, a, b = setup_native(tmp_path, fixture_program, mode=mode)
+    if mode == "normal":
+        (tmp_path / "next-build.txt").write_text("WRONG_BUILD")
     owner = NativeLive(command)
     try:
         assert owner.line()["ok"]
@@ -239,6 +248,13 @@ def test_failed_runtime_stops_before_queued_second_build(tmp_path, fixture_progr
         ]
         assert sum(row["operation"] == "flash" for row in rows) == 1
         assert not (tmp_path / "build/run/build-0002").exists()
+        if mode == "pre-ready-heartbeats":
+            evidence = tmp_path / "build/run/build-0001/runtime.evidence.json"
+            assertions = json.loads(evidence.read_bytes())["assertions"]
+            assert assertions["heartbeat"]["observed"] == 1
+            assert assertions["heartbeat"]["passed"] is False
+            assert assertions["readiness_window"]["heartbeat_total"] == 3
+            assert assertions["readiness_window"]["heartbeat_excluded"] == 2
     finally:
         owner.dispose()
 

@@ -93,6 +93,15 @@ before READY: native totals alone do not establish the post-READY count. The
 client and all nine managed child processes exited normally, the native quota
 reached zero and cooperative leases were released after process exit.
 
+The subsequent debugger 0.2.5 candidate at `80db27e` tightens native acceptance:
+BUILD and heartbeat counts come only after the last complete READY. Earlier
+startup/boot counts remain visible in `assertions.readiness_window` but cannot
+satisfy acceptance; forbidden lines still cover the full capture. Replaying the
+unchanged A/B receive bytes through that predicate gives 29 qualifying
+heartbeats and two exclusions each. This is an offline re-evaluation, not a
+second physical run with the new executable. Distinguish local candidates by
+source revision and archive/executable hashes, not their shared 0.2.5 version.
+
 See the [fixture and fixed A/B client](../examples/nrf52840-dk/README.md).
 This qualifies this Windows/DK fixture; it does not establish post-disconnect
 CPU state, other boards, generic serial firmware or remote CI provenance.
@@ -141,6 +150,7 @@ uv run --locked pytest tests/test_native_managed.py
 Tests compile a std-only Rust baud fixture with synthetic COM999/FFFF:0001
 identities and no hardware API. `rustc` is a test dependency only. No implicit
 fallback to a real serial executable or probe is allowed. The integration covers
-A/B under one native grant, failed runtime blocking B, hung descendants, ownership
+A/B under one native grant, wrong BUILD or insufficient post-READY heartbeats
+blocking B, hung descendants, ownership
 conflicts, EOF and abrupt owner death. The limited physical qualification is
 recorded above; these automated integrations remain host-only.
