@@ -77,6 +77,26 @@ deadline expiry or incomplete cleanup ends the run, with no hardware retry or
 recovery. Count exhaustion closes automatically; EOF and idle expiry close the
 native owner before releasing leases. A new run needs a fresh native scope.
 
+## Local DK qualification
+
+On 2026-10-19, one physical A/B run passed on the nRF52840 DK onboard target
+with external SWD disconnected. The installed 0.2.0 wheel and candidate debugger
+0.2.5 used J-Link `1366:1061:001050275757`, target `nRF52840_xxAA`, and COM11
+at 115200, DTR=true, RTS=false, zero transmit. Both 638-byte Code Flash images
+verified, with the same first 4 KiB erase window and no UICR image bytes.
+
+One native owner handled both builds without per-build confirmation or retry.
+Each native runtime acceptance observed READY and the corresponding BUILD line;
+independent Base64-byte reconstruction found 29 complete heartbeats after READY
+for each build. Native heartbeat totals were 31, including two startup lines
+before READY: native totals alone do not establish the post-READY count. The
+client and all nine managed child processes exited normally, the native quota
+reached zero and cooperative leases were released after process exit.
+
+See the [fixture and fixed A/B client](../examples/nrf52840-dk/README.md).
+This qualifies this Windows/DK fixture; it does not establish post-disconnect
+CPU state, other boards, generic serial firmware or remote CI provenance.
+
 ## Ownership, deadlines and evidence
 
 Windows children start suspended, enter a kill-on-close Job, and resume only
@@ -122,4 +142,5 @@ Tests compile a std-only Rust baud fixture with synthetic COM999/FFFF:0001
 identities and no hardware API. `rustc` is a test dependency only. No implicit
 fallback to a real serial executable or probe is allowed. The integration covers
 A/B under one native grant, failed runtime blocking B, hung descendants, ownership
-conflicts, EOF and abrupt owner death. Physical acceptance is a later stage.
+conflicts, EOF and abrupt owner death. The limited physical qualification is
+recorded above; these automated integrations remain host-only.
