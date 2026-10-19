@@ -1,6 +1,6 @@
 # Managed flash and runtime acceptance
 
-This Windows candidate coordinates one native `flash session serve` and its
+This Windows workflow coordinates one native `flash session serve` and its
 runtime acceptance children while holding cooperative debug/serial ownership.
 The native debugger performs all target operations and serial observations.
 HIL Runner has no arbitrary-command, erase, recover or automatic-retry endpoint.
@@ -116,9 +116,13 @@ and does not prove that a physical target resumed or a serial control line staye
 unchanged. A subsequent owner must check target state through native tools.
 
 Runtime dependencies: none; Python 3.11+. Windows managed execution is the local
-verified platform. Debugger 0.2.5 is the qualified local runtime candidate: 0.2.4
+verified platform. Official debugger 0.2.5 is the qualified runtime version: 0.2.4
 can hang after polling a Windows monitor exit and then waiting on its notification
-again. The runner's deadline contains that failure, but cannot turn it into a
+again. Its official Windows ZIP SHA-256 is
+`835bb47a5b1c536395a7ca1382873fea460f5c035069b6be9b3c928ee06fa17c`,
+with executable SHA-256
+`e83f4483f07d63630cb90dd964b6eab1b619d4de8b1ba1c7e69f9a677119cb2d`.
+The runner's deadline contains the old failure, but cannot turn it into a
 successful acceptance. Other native versions need qualification.
 
 Inputs are rehashed before each executable start. Native stdout/stderr, requests,

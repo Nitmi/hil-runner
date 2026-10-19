@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -11,13 +12,14 @@ permissions:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.13"]
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
@@ -28,7 +30,47 @@ jobs:
       - run: uv sync --locked --extra dev --python "${{ matrix.python-version }}"
       - run: uv run --locked ruff check .
       - run: uv run --locked ruff format --check .
-      - run: uv run --locked pytest
-      - run: uv build
-      - run: uv run --locked hil-runner --version
-      - run: uv run --locked python -m hil_runner --version
+      - run: uv run --locked python scripts/release.py build --output-dir "${{ runner.temp }}/hil-wheel"
+      - name: Replace editable runtime with the built wheel
+        run: uv pip install --python .venv --no-index --no-deps --reinstall --find-links "${{ runner.temp }}/hil-wheel" embedded-hil-runner
+      - run: uv run --no-sync python scripts/smoke_installed.py
+      - run: uv run --no-sync pytest
+
+  native-replay:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
+        with:
+          version: "0.11.7"
+          python-version: "3.11"
+          enable-cache: true
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+        with:
+          toolchain: 1.89.0
+      - run: uv sync --locked --extra dev
+      - name: Verify the official debugger and Replay fixture
+        timeout-minutes: 3
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/fetch_native_test_debugger.ps1 -OutputDirectory "${{ runner.temp }}/hil-native-debugger"
+      - run: uv run --locked python scripts/release.py build --output-dir "${{ runner.temp }}/hil-native-wheel"
+      - run: uv pip install --python .venv --no-index --no-deps --reinstall --find-links "${{ runner.temp }}/hil-native-wheel" embedded-hil-runner
+      - run: uv run --no-sync python scripts/smoke_installed.py
+      - name: Native Replay and fake-UART integration
+        run: uv run --no-sync pytest tests/test_native_managed.py --basetemp "${{ runner.temp }}/hil-native-evidence" --junitxml "${{ runner.temp }}/hil-native-results.xml"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: hil-native-replay-evidence
+          path: |
+            ${{ runner.temp }}/hil-native-evidence
+            ${{ runner.temp }}/hil-native-results.xml
+            ${{ runner.temp }}/hil-native-debugger/debugger-attestation-verification.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

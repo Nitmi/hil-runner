@@ -1,6 +1,6 @@
 # HIL Runner
 
-HIL Runner 0.2.0 is a local candidate for cooperative ownership and managed native
+HIL Runner 0.2.0 provides cooperative ownership and managed native
 flash/runtime execution. `lease` retains the host-only 0.1 interface described
 below. Windows `managed` holds that ownership across one native bounded flash
 session and per-build native runtime acceptance. An Agent can submit successive
@@ -14,6 +14,11 @@ is alive; PID files, stale timestamps and lock-file deletion do not grant
 ownership. Runtime dependencies: none. Python 3.11+.
 
 ## Develop and use
+
+Install a verified GitHub Release wheel in a dedicated Python 3.11+ environment;
+see [release verification and installation](docs/installation.md). The wheel does
+not install native components, switch Toolkit's station lock, or authorize a
+board operation.
 
 ```powershell
 uv sync --locked --extra dev
@@ -95,18 +100,19 @@ See [protocol](docs/protocol.md) and `schemas/result.schema.json`.
 uv run --locked pytest
 uv run --locked ruff check .
 uv run --locked ruff format --check .
-uv build
+uv build --no-build-isolation
 ```
 
 Tests use synthetic selections and real independent host processes; no hardware
 access is required. CI is configured for Windows/Ubuntu, Python 3.11/3.13.
-Windows local process tests establish this candidate's verified platform.
-Remote CI and Unix execution must pass before Unix compatibility is claimed.
+Managed native execution is Windows-only; Unix supports cooperative host leases.
+Remote checks must pass before a release is published.
 Managed tests require explicit native Replay settings and a compiled host-only
 baud fixture; the ordinary suite skips those integrations. Local Replay and fake
-UART results do not qualify physical boards. There is no GitHub Release,
-standalone binary, Toolkit catalog integration, power control, daemon/socket or
-remote lease broker in this stage.
+UART results do not qualify physical boards. GitHub Releases deliver wheel and
+source archives with SHA-256 and tag-bound GitHub attestations. The current
+delivery does not include a standalone binary, Toolkit catalog integration,
+power control, daemon/socket or remote lease broker.
 
 OS primitives follow the Python documentation for
 [Windows nonblocking region locks](https://docs.python.org/3/library/msvcrt.html#msvcrt.locking)
