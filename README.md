@@ -1,6 +1,7 @@
 # HIL Runner
 
-Local 0.5.0 candidate adds fixed Renode GPIO/TIMER0 suites, native samples and
+Local 0.6.0 candidate adds fixed Xtensa ESP32-S3 Flash suites, native core/clock
+declarations and runtime identity alongside Renode GPIO/TIMER0 samples and
 model snapshots with explicit coverage/time semantics. It retains ESP-IDF Flash plans and native
 `passed_with_model_limits` verdicts and diagnostics in the separate [simulation suite](docs/simulation.md)
 domain: fixed hash-bound sim-runner execution, all-case preflight, sequential

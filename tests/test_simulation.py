@@ -114,7 +114,7 @@ def test_arbitrary_wheel_modules_and_invalid_zip_rejected():
         sim.package(b"not a zip")
 
 
-def flash_inputs(inputs, *, version="0.3.0", gpio=False):
+def flash_inputs(inputs, *, version="0.3.0", gpio=False, s3=False):
     spec = json.loads(inputs.read_bytes())
     wheel = Path(spec["sim_runner_wheel"]["path"])
     with zipfile.ZipFile(wheel, "w") as archive:
@@ -129,9 +129,11 @@ def flash_inputs(inputs, *, version="0.3.0", gpio=False):
     plan.update(
         schema_version="embedded-sim-runner.gpio-timer-plan.v1"
         if gpio
+        else "embedded-sim-runner.qemu-s3-flash-plan.v1"
+        if s3
         else "embedded-sim-runner.qemu-flash-plan.v1",
-        profile=sim.GPIO_PROFILE if gpio else "esp32c3-idf-flash-v1",
-        backend="renode" if gpio else "espressif-qemu",
+        profile=sim.GPIO_PROFILE if gpio else sim.S3_PROFILE if s3 else "esp32c3-idf-flash-v1",
+        backend="renode" if gpio else "espressif-qemu-xtensa" if s3 else "espressif-qemu",
     )
     native.write_text(json.dumps(plan))
     spec["sim_runner_wheel"]["sha256"] = digest(wheel.read_bytes())
@@ -140,7 +142,7 @@ def flash_inputs(inputs, *, version="0.3.0", gpio=False):
     inputs.write_text(json.dumps(spec))
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
 def test_flash_profile_requires_versioned_module_inventory(inputs, version):
     flash_inputs(inputs, version=version)
     if version == "0.2.0":
@@ -150,13 +152,32 @@ def test_flash_profile_requires_versioned_module_inventory(inputs, version):
         assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
 def test_gpio_plan_requires_040_inventory(inputs, version):
     flash_inputs(inputs, version=version, gpio=True)
-    if version == "0.4.0":
-        assert len(sim.compile_plan(inputs)["package_files"]) == 18
+    if version in ("0.4.0", "0.5.0"):
+        assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
     else:
         with pytest.raises(HilError, match="GPIO plans require"):
+            sim.compile_plan(inputs)
+
+
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
+def test_s3_requires_050_inventory_and_its_own_backend(inputs, version):
+    flash_inputs(inputs, version=version, s3=True)
+    if version != "0.5.0":
+        with pytest.raises(HilError, match="S3 plans require"):
+            sim.compile_plan(inputs)
+    else:
+        assert len(sim.compile_plan(inputs)["package_files"]) == 20
+        spec = json.loads(inputs.read_bytes())
+        native = Path(spec["cases"][0]["plan"]["path"])
+        doc = json.loads(native.read_bytes()) | {"backend": "espressif-qemu"}
+        native.write_text(json.dumps(doc))
+        for row in spec["cases"]:
+            row["plan"]["sha256"] = digest(native.read_bytes())
+        inputs.write_text(json.dumps(spec))
+        with pytest.raises(HilError, match="unsupported simulation profile"):
             sim.compile_plan(inputs)
 
 
@@ -173,15 +194,18 @@ def test_gpio_plan_requires_040_inventory(inputs, version):
         "limited-failed",
         "gpio",
         "gpio-failed",
+        "s3",
+        "s3-failed",
     ],
 )
 def test_suite_stops_and_preserves_native_failure_and_cleanup(
     inputs, tmp_path, monkeypatch, failure
 ):
     attempts = []
-    limited = failure in ("limited", "limited-failed")
+    s3 = failure in ("s3", "s3-failed")
+    limited = failure in ("limited", "limited-failed") or s3
     if limited:
-        flash_inputs(inputs)
+        flash_inputs(inputs, version="0.5.0" if s3 else "0.3.0", s3=s3)
     gpio = failure in ("gpio", "gpio-failed")
     if gpio:
         flash_inputs(inputs, version="0.4.0", gpio=True)
@@ -205,6 +229,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 "executables_started": False,
                 "profile": sim.GPIO_PROFILE
                 if gpio
+                else sim.S3_PROFILE
+                if s3
                 else "esp32c3-idf-flash-v1"
                 if limited
                 else "esp32c3-ram-uart-v1",
@@ -220,7 +246,7 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                     self.timed_out = True
                     raise HilError("TIMEOUT", "synthetic native timeout")
                 failed = (
-                    failure in ("native-failed", "limited-failed", "gpio-failed")
+                    failure in ("native-failed", "limited-failed", "gpio-failed", "s3-failed")
                     and folder.name == "b"
                 )
                 value.update(
@@ -257,6 +283,20 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                         if failed
                         else {"samples": [{"sequence": 1}], "model_observations": [{"phase": 0}]},
                     )
+                if s3:
+                    value.update(
+                        schema_version="embedded-sim-runner.qemu-s3-flash-report.v1",
+                        backend="espressif-qemu-xtensa",
+                        backend_version="synthetic",
+                        runtime_archive_sha256="a" * 64,
+                        virtual_time={
+                            "domain": "qemu_device_clock_unmeasured",
+                            "elapsed_ns": None,
+                            "budget_enforced": False,
+                        },
+                    )
+                    if not failed:
+                        value["assertions"]["app_core_markers"] = [0, 1]
                 (folder / "report.json").write_text(json.dumps(value))
                 code = 1 if failed else 0
             if operation == "inspect-report":
@@ -286,8 +326,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             (Path(__file__).parents[1] / "schemas/simulation-report.schema.json").read_bytes()
         ),
     )
-    assert report["ok"] is (failure in (None, "limited", "gpio"))
-    if failure in ("native-failed", "limited-failed", "gpio-failed"):
+    assert report["ok"] is (failure in (None, "limited", "gpio", "s3"))
+    if failure in ("native-failed", "limited-failed", "gpio-failed", "s3-failed"):
         assert attempts == ["a", "b"] and report["cases"][-1]["status"] == "not_run"
         assert len(json.loads((output / "trace-input.json").read_bytes())["sources"]) == 2
     if failure in ("preflight", "startup"):
@@ -308,11 +348,30 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
         saved.write_text(json.dumps(changed))
         with pytest.raises(HilError, match="limitations differ"):
             sim.inspect_report(saved, digest(saved.read_bytes()))
-        if failure == "limited":
+        if failure in ("limited", "s3"):
             assert report["status"] == "passed_with_model_limits" and attempts == ["a", "b", "c"]
             changed = {**report, "status": "passed"}
             saved.write_text(json.dumps(changed))
             with pytest.raises(HilError, match="limitations were changed"):
+                sim.inspect_report(saved, digest(saved.read_bytes()))
+        saved.write_text(json.dumps(report))
+    if s3:
+        assert report["cases"][0]["app_core_markers"] == [0, 1]
+        if failure == "s3-failed":
+            assert report["cases"][1]["app_core_markers"] is None
+        for key, value in (
+            ("backend", "espressif-qemu"),
+            ("runtime_archive_sha256", "b" * 64),
+            ("app_core_markers", [False, 1]),
+            (
+                "virtual_time",
+                {"domain": "qemu_icount_shift_0", "elapsed_ns": 5, "budget_enforced": True},
+            ),
+        ):
+            changed = json.loads(json.dumps(report))
+            changed["cases"][0][key] = value
+            saved.write_text(json.dumps(changed))
+            with pytest.raises(HilError, match="S3 case identity"):
                 sim.inspect_report(saved, digest(saved.read_bytes()))
         saved.write_text(json.dumps(report))
     if gpio:

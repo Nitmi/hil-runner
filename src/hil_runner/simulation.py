@@ -43,14 +43,18 @@ FLASH_MODULES = MODULES | {
     "assets/esp32c3-idf-flash.json",
 }
 GPIO_MODULES = FLASH_MODULES | {"gpio_timer.py", "assets/nrf52840-gpio-timer.repl"}
-INVENTORIES = {"0.2.0": MODULES, "0.3.0": FLASH_MODULES, "0.4.0": GPIO_MODULES}
+S3_MODULES = GPIO_MODULES | {"qemu_s3.py", "assets/esp32s3-idf-flash.json"}
+INVENTORIES = {"0.2.0": MODULES, "0.3.0": FLASH_MODULES, "0.4.0": GPIO_MODULES, "0.5.0": S3_MODULES}
 GPIO_PROFILE = "nrf52840-gpio-timer-v1"
+S3_PROFILE = "esp32s3-idf-flash-v1"
+FLASH_PROFILES = ("esp32c3-idf-flash-v1", S3_PROFILE)
 SUCCESS = ("passed", "passed_with_model_limits")
 PROFILES = {
     "embedded-sim-runner.plan.v1": ("nrf52840-uart-v1", "renode"),
     "embedded-sim-runner.qemu-plan.v1": ("esp32c3-ram-uart-v1", "espressif-qemu"),
     "embedded-sim-runner.qemu-flash-plan.v1": ("esp32c3-idf-flash-v1", "espressif-qemu"),
     "embedded-sim-runner.gpio-timer-plan.v1": (GPIO_PROFILE, "renode"),
+    "embedded-sim-runner.qemu-s3-flash-plan.v1": (S3_PROFILE, "espressif-qemu-xtensa"),
 }
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));"
@@ -125,7 +129,7 @@ def _package(data: bytes) -> dict[str, bytes]:
             for version in INVENTORIES
             if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
         ]
-        require(len(versions) == 1, "requires sim-runner 0.2.0, 0.3.0 or 0.4.0 wheel")
+        require(len(versions) == 1, "requires sim-runner 0.2.0, 0.3.0, 0.4.0 or 0.5.0 wheel")
         version = versions[0]
         modules = INVENTORIES[version]
         metadata = f"embedded_sim_runner-{version}.dist-info/"
@@ -218,12 +222,17 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
             "unsupported simulation profile",
         )
         require(
-            profile[0] != "esp32c3-idf-flash-v1" or set(files) in (FLASH_MODULES, GPIO_MODULES),
-            "Flash plans require sim-runner 0.3.0 or 0.4.0",
+            profile[0] != "esp32c3-idf-flash-v1"
+            or set(files) in (FLASH_MODULES, GPIO_MODULES, S3_MODULES),
+            "Flash plans require sim-runner 0.3.0, 0.4.0 or 0.5.0",
         )
         require(
-            profile[0] != GPIO_PROFILE or set(files) == GPIO_MODULES,
-            "GPIO plans require sim-runner 0.4.0",
+            profile[0] != GPIO_PROFILE or set(files) in (GPIO_MODULES, S3_MODULES),
+            "GPIO plans require sim-runner 0.4.0 or 0.5.0",
+        )
+        require(
+            profile[0] != S3_PROFILE or set(files) == S3_MODULES,
+            "S3 plans require sim-runner 0.5.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -438,8 +447,10 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 native_report_inspected=True,
                 native_errors=value.get("errors"),
             )
-            if row["profile"] == "esp32c3-idf-flash-v1":
+            if row["profile"] in FLASH_PROFILES:
                 state.update(model_limits(value))
+            if row["profile"] == S3_PROFILE:
+                state.update(s3_evidence(value))
             if row["profile"] == GPIO_PROFILE:
                 state.update(gpio_evidence(value))
             native_files.append(report_path)
@@ -495,6 +506,7 @@ def run(path: Path, sha: str, output: Path) -> dict:
         "flash-input.bin",
         "flash-work.bin",
         "esp32c3-rom.bin",
+        "esp32s3_rev0_rom.bin",
         "efuse-initial.bin",
         "efuse-work.bin",
     }
@@ -605,6 +617,44 @@ def gpio_evidence(native):
     }
 
 
+def s3_evidence(native):
+    """Retain native identity/clock/core declarations; do not rerun the CPU policy."""
+    require(
+        native.get("schema_version") == "embedded-sim-runner.qemu-s3-flash-report.v1"
+        and native.get("backend") == "espressif-qemu-xtensa",
+        "invalid S3 native identity",
+    )
+    clock = native.get("virtual_time")
+    require(
+        isinstance(clock, dict)
+        and set(clock) == {"domain", "elapsed_ns", "budget_enforced"}
+        and clock["domain"] == "qemu_device_clock_unmeasured"
+        and clock["elapsed_ns"] is None
+        and clock["budget_enforced"] is False,
+        "invalid S3 clock declaration",
+    )
+    assertions = native.get("assertions")
+    require(assertions is None or isinstance(assertions, dict), "invalid S3 assertions")
+    require(not native["ok"] or isinstance(assertions, dict), "passing S3 assertions missing")
+    cores = None if assertions is None else assertions.get("app_core_markers")
+    require(
+        assertions is None
+        or (
+            isinstance(cores, list)
+            and len(cores) <= 2
+            and all(type(c) is int and c in (0, 1) for c in cores)
+        ),
+        "invalid S3 application core declarations",
+    )
+    return {
+        "backend": native["backend"],
+        "backend_version": native["backend_version"],
+        "runtime_archive_sha256": native["runtime_archive_sha256"],
+        "virtual_time": dict(clock),
+        "app_core_markers": None if cores is None else list(cores),
+    }
+
+
 def inspect_report(path: Path, sha: str) -> dict:
     raw, _ = read(path, 1024 * 1024, sha)
     doc = decode(raw)
@@ -669,13 +719,21 @@ def inspect_report(path: Path, sha: str) -> dict:
                 native.get("status") == status and native.get("ok") is (status in SUCCESS),
                 "case verdict differs from native report",
             )
-            if planned["profile"] == "esp32c3-idf-flash-v1":
+            if planned["profile"] in FLASH_PROFILES:
                 require(
-                    all(case.get(k) == v for k, v in model_limits(native).items()),
+                    json.dumps({k: case.get(k) for k in model_limits(native)}, sort_keys=True)
+                    == json.dumps(model_limits(native), sort_keys=True),
                     "case model limitations differ from native report",
                 )
             else:
                 require(status != "passed_with_model_limits", "unsupported limited verdict")
+            if planned["profile"] == S3_PROFILE:
+                expected = s3_evidence(native)
+                require(
+                    json.dumps({k: case.get(k) for k in expected}, sort_keys=True)
+                    == json.dumps(expected, sort_keys=True),
+                    "S3 case identity/clock/core summary differs",
+                )
             if planned["profile"] == GPIO_PROFILE:
                 expected = gpio_evidence(native)
                 require(
