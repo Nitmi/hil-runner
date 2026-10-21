@@ -15,7 +15,9 @@ from hil_runner.common import HilError, digest
 
 @pytest.fixture
 def inputs(tmp_path):
-    interpreter = Path(sys.executable).resolve()
+    # Offline planning and FakeChild tests never execute this synthetic file.
+    interpreter = tmp_path / "synthetic-python"
+    interpreter.write_bytes(b"synthetic interpreter, never executed")
     wheel = tmp_path / "sim.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         for name in sim.MODULES:
