@@ -114,12 +114,50 @@ def test_arbitrary_wheel_modules_and_invalid_zip_rejected():
         sim.package(b"not a zip")
 
 
+def flash_inputs(inputs, *, version="0.3.0"):
+    spec = json.loads(inputs.read_bytes())
+    wheel = Path(spec["sim_runner_wheel"]["path"])
+    with zipfile.ZipFile(wheel, "w") as archive:
+        for name in sim.INVENTORIES[version]:
+            archive.writestr("sim_runner/" + name, b"synthetic, never executed")
+        archive.writestr(
+            f"embedded_sim_runner-{version}.dist-info/METADATA",
+            f"Name: embedded-sim-runner\nVersion: {version}\n",
+        )
+    native = Path(spec["cases"][0]["plan"]["path"])
+    plan = json.loads(native.read_bytes())
+    plan.update(
+        schema_version="embedded-sim-runner.qemu-flash-plan.v1", profile="esp32c3-idf-flash-v1"
+    )
+    native.write_text(json.dumps(plan))
+    spec["sim_runner_wheel"]["sha256"] = digest(wheel.read_bytes())
+    for case in spec["cases"]:
+        case["plan"]["sha256"] = digest(native.read_bytes())
+    inputs.write_text(json.dumps(spec))
+
+
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0"])
+def test_flash_profile_requires_versioned_module_inventory(inputs, version):
+    flash_inputs(inputs, version=version)
+    if version == "0.2.0":
+        with pytest.raises(HilError, match="require sim-runner 0.3.0"):
+            sim.compile_plan(inputs)
+    else:
+        assert len(sim.compile_plan(inputs)["package_files"]) == 16
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows process supervision")
-@pytest.mark.parametrize("failure", [None, "native-failed", "preflight", "timeout", "startup"])
+@pytest.mark.parametrize(
+    "failure",
+    [None, "native-failed", "preflight", "timeout", "startup", "limited", "limited-failed"],
+)
 def test_suite_stops_and_preserves_native_failure_and_cleanup(
     inputs, tmp_path, monkeypatch, failure
 ):
     attempts = []
+    limited = failure in ("limited", "limited-failed")
+    if limited:
+        flash_inputs(inputs)
 
     class FakeChild:
         def __init__(self, command, directory, name, *, jsonl):
@@ -138,7 +176,7 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 "physical_board_verified": False,
                 "ok": True,
                 "executables_started": False,
-                "profile": "esp32c3-ram-uart-v1",
+                "profile": "esp32c3-idf-flash-v1" if limited else "esp32c3-ram-uart-v1",
             }
             code = 0
             if failure == "preflight" and operation == "inspect-plan":
@@ -150,13 +188,30 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 if failure == "timeout":
                     self.timed_out = True
                     raise HilError("TIMEOUT", "synthetic native timeout")
-                failed = failure == "native-failed" and folder.name == "b"
+                failed = failure in ("native-failed", "limited-failed") and folder.name == "b"
                 value.update(
                     ok=not failed,
                     status="failed" if failed else "passed",
                     artifacts={},
                     errors=[{"code": "ASSERTION_FAILED"}] if failed else [],
                 )
+                if limited:
+                    value.update(
+                        status="failed" if failed else "passed_with_model_limits",
+                        assertions=None
+                        if failed
+                        else {
+                            "model_diagnostics": [
+                                {
+                                    "message": "synthetic model limit",
+                                    "count": 1,
+                                    "meaning": "synthetic",
+                                }
+                            ]
+                        },
+                        model_coverage_complete=False,
+                        security_features_verified=False,
+                    )
                 (folder / "report.json").write_text(json.dumps(value))
                 code = 1 if failed else 0
             if operation == "inspect-report":
@@ -186,8 +241,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             (Path(__file__).parents[1] / "schemas/simulation-report.schema.json").read_bytes()
         ),
     )
-    assert report["ok"] is (failure is None)
-    if failure == "native-failed":
+    assert report["ok"] is (failure in (None, "limited"))
+    if failure in ("native-failed", "limited-failed"):
         assert attempts == ["a", "b"] and report["cases"][-1]["status"] == "not_run"
         assert len(json.loads((output / "trace-input.json").read_bytes())["sources"]) == 2
     if failure in ("preflight", "startup"):
@@ -200,6 +255,21 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
     assert (
         sim.inspect_report(saved, digest(saved.read_bytes()))["report_status"] == report["status"]
     )
+    if limited:
+        assert report["cases"][0]["status"] == "passed_with_model_limits"
+        assert report["cases"][0]["model_diagnostics"][0]["count"] == 1
+        changed = json.loads(saved.read_bytes())
+        changed["cases"][0]["model_diagnostics"] = []
+        saved.write_text(json.dumps(changed))
+        with pytest.raises(HilError, match="limitations differ"):
+            sim.inspect_report(saved, digest(saved.read_bytes()))
+        if failure == "limited":
+            assert report["status"] == "passed_with_model_limits" and attempts == ["a", "b", "c"]
+            changed = {**report, "status": "passed"}
+            saved.write_text(json.dumps(changed))
+            with pytest.raises(HilError, match="limitations were changed"):
+                sim.inspect_report(saved, digest(saved.read_bytes()))
+        saved.write_text(json.dumps(report))
     (output / "plan.json").write_bytes(b"changed")
     with pytest.raises(HilError):
         sim.inspect_report(saved, digest(saved.read_bytes()))

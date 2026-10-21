@@ -1,6 +1,7 @@
 # HIL Runner
 
-Local 0.3.0 candidate adds a separate [simulation suite](docs/simulation.md)
+Local 0.4.0 candidate adds ESP-IDF Flash plans and preserves native
+`passed_with_model_limits` verdicts and diagnostics in the separate [simulation suite](docs/simulation.md)
 domain: fixed hash-bound sim-runner execution, all-case preflight, sequential
 fail-fast cases and an offline Trace input. It never acquires a board lease,
 falls back to hardware or requests confirmation per case. Existing lease and

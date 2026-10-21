@@ -37,6 +37,18 @@ MODULES = {
     "assets/nrf52840-uart.repl",
     "assets/esp32c3-uart.json",
 }
+FLASH_MODULES = MODULES | {
+    "flash_image.py",
+    "qemu_flash.py",
+    "assets/esp32c3-idf-flash.json",
+}
+INVENTORIES = {"0.2.0": MODULES, "0.3.0": FLASH_MODULES}
+SUCCESS = ("passed", "passed_with_model_limits")
+PROFILES = {
+    "embedded-sim-runner.plan.v1": ("nrf52840-uart-v1", "renode"),
+    "embedded-sim-runner.qemu-plan.v1": ("esp32c3-ram-uart-v1", "espressif-qemu"),
+    "embedded-sim-runner.qemu-flash-plan.v1": ("esp32c3-idf-flash-v1", "espressif-qemu"),
+}
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));"
     'runpy.run_module("sim_runner",run_name="__main__")'
@@ -105,7 +117,15 @@ def _package(data: bytes) -> dict[str, bytes]:
             "invalid wheel inventory",
         )
         require(sum(i.file_size for i in items) <= 8 * 1024 * 1024, "inflated wheel exceeds budget")
-        metadata = "embedded_sim_runner-0.2.0.dist-info/"
+        versions = [
+            version
+            for version in INVENTORIES
+            if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
+        ]
+        require(len(versions) == 1, "requires sim-runner 0.2.0 or 0.3.0 wheel")
+        version = versions[0]
+        modules = INVENTORIES[version]
+        metadata = f"embedded_sim_runner-{version}.dist-info/"
         for item in items:
             require(not item.flag_bits & 1, "encrypted wheel members unsupported")
             name = item.filename
@@ -120,15 +140,16 @@ def _package(data: bytes) -> dict[str, bytes]:
             )
             if name.startswith("sim_runner/"):
                 relative = name.removeprefix("sim_runner/")
-                require(relative in MODULES, "unexpected simulator module")
+                require(relative in modules, "unexpected simulator module")
                 result[relative] = archive.read(item)
             else:
                 require(name.startswith(metadata), "unexpected wheel package")
-        require(set(result) == MODULES, "incomplete simulator package")
+        require(set(result) == modules, "incomplete simulator package")
         meta = archive.read(metadata + "METADATA").decode("utf-8")
         require(
-            "\nName: embedded-sim-runner\n" in "\n" + meta and "\nVersion: 0.2.0\n" in "\n" + meta,
-            "requires sim-runner 0.2.0 wheel",
+            "\nName: embedded-sim-runner\n" in "\n" + meta
+            and f"\nVersion: {version}\n" in "\n" + meta,
+            "simulator wheel version differs",
         )
         require(
             all(
@@ -187,15 +208,15 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
         data, reference = read(path, 65536, native["sha256"])
         doc = decode(data)
         require(isinstance(doc, dict), "native plan must be an object")
-        qemu = doc.get("schema_version") == "embedded-sim-runner.qemu-plan.v1"
+        profile = PROFILES.get(doc.get("schema_version"))
+        require(profile is not None, "unsupported native plan")
         require(
-            qemu or doc.get("schema_version") == "embedded-sim-runner.plan.v1",
-            "unsupported native plan",
+            (doc.get("profile"), doc.get("backend")) == profile,
+            "unsupported simulation profile",
         )
         require(
-            doc.get("profile") == ("esp32c3-ram-uart-v1" if qemu else "nrf52840-uart-v1")
-            and doc.get("backend") == ("espressif-qemu" if qemu else "renode"),
-            "unsupported simulation profile",
+            profile[0] != "esp32c3-idf-flash-v1" or set(files) == FLASH_MODULES,
+            "Flash plans require sim-runner 0.3.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -398,12 +419,20 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 "native exit/verdict mismatch",
                 "COMPONENT_FAILED",
             )
+            require(
+                value.get("status") in (*SUCCESS, "failed")
+                and value["ok"] is (value["status"] in SUCCESS),
+                "native verdict mismatch",
+                "COMPONENT_FAILED",
+            )
             state.update(
-                status="passed" if value["ok"] else "failed",
+                status=value["status"],
                 report=reference,
                 native_report_inspected=True,
                 native_errors=value.get("errors"),
             )
+            if row["profile"] == "esp32c3-idf-flash-v1":
+                state.update(model_limits(value))
             native_files.append(report_path)
             for filename, artifact in value["artifacts"].items():
                 require(re.fullmatch(r"[A-Za-z0-9_.-]+", filename), "invalid native artifact name")
@@ -454,6 +483,11 @@ def run(path: Path, sha: str, output: Path) -> dict:
         "backend.stderr.bin",
         "uart.bin",
         "report.json",
+        "flash-input.bin",
+        "flash-work.bin",
+        "esp32c3-rom.bin",
+        "efuse-initial.bin",
+        "efuse-work.bin",
     }
     for row in plan["cases"]:
         directory = output / "runs" / row["id"]
@@ -476,7 +510,13 @@ def run(path: Path, sha: str, output: Path) -> dict:
         "schema_version": PREFIX + "report.v1",
         **FLAGS,
         "ok": not errors,
-        "status": "failed" if errors else "passed",
+        "status": "failed"
+        if errors
+        else (
+            "passed_with_model_limits"
+            if any(case["status"] == "passed_with_model_limits" for case in cases)
+            else "passed"
+        ),
         "plan_sha256": digest(raw),
         "component_start_attempted": bool(calls),
         "component_processes_started": any(
@@ -494,6 +534,29 @@ def run(path: Path, sha: str, output: Path) -> dict:
     return report
 
 
+def model_limits(native):
+    require(
+        native.get("model_coverage_complete") is False
+        and native.get("security_features_verified") is False,
+        "invalid Flash coverage claim",
+        "COMPONENT_FAILED",
+    )
+    assertions = native.get("assertions")
+    diagnostics = assertions.get("model_diagnostics") if isinstance(assertions, dict) else []
+    require(isinstance(diagnostics, list), "invalid model diagnostics", "COMPONENT_FAILED")
+    if native["ok"]:
+        require(
+            (native["status"] == "passed_with_model_limits") is bool(diagnostics),
+            "model diagnostic status differs",
+            "COMPONENT_FAILED",
+        )
+    return {
+        "model_diagnostics": diagnostics,
+        "model_coverage_complete": False,
+        "security_features_verified": False,
+    }
+
+
 def inspect_report(path: Path, sha: str) -> dict:
     raw, _ = read(path, 1024 * 1024, sha)
     doc = decode(raw)
@@ -501,7 +564,7 @@ def inspect_report(path: Path, sha: str) -> dict:
     for key, value in FLAGS.items():
         require(type(doc.get(key)) is type(value) and doc[key] == value, "invalid suite boundary")
     require(
-        doc.get("status") in ("passed", "failed") and doc.get("ok") is (doc["status"] == "passed"),
+        doc.get("status") in (*SUCCESS, "failed") and doc.get("ok") is (doc["status"] in SUCCESS),
         "suite verdict mismatch",
     )
     artifacts = doc.get("artifacts")
@@ -537,15 +600,17 @@ def inspect_report(path: Path, sha: str) -> dict:
         "suite case inventory differs",
     )
     stopped = False
-    for case in cases:
+    limited = False
+    for case, planned in zip(cases, plan["cases"], strict=True):
         status = case.get("status")
         require(
-            status in ("passed", "failed", "not_run", "execution_attempted")
+            status in (*SUCCESS, "failed", "not_run", "execution_attempted")
             and (not stopped or status == "not_run"),
             "suite did not stop at failure",
         )
-        stopped |= status != "passed"
-        if status in ("passed", "failed"):
+        stopped |= status not in SUCCESS
+        limited |= status == "passed_with_model_limits"
+        if status in (*SUCCESS, "failed"):
             name = "runs/" + case["id"] + "/report.json"
             require(
                 name in artifacts and artifacts[name]["sha256"] == case["report"]["sha256"],
@@ -553,9 +618,16 @@ def inspect_report(path: Path, sha: str) -> dict:
             )
             native = decode(read(path.parent / name, 1024 * 1024)[0])
             require(
-                native.get("status") == status and native.get("ok") is (status == "passed"),
+                native.get("status") == status and native.get("ok") is (status in SUCCESS),
                 "case verdict differs from native report",
             )
+            if planned["profile"] == "esp32c3-idf-flash-v1":
+                require(
+                    all(case.get(k) == v for k, v in model_limits(native).items()),
+                    "case model limitations differ from native report",
+                )
+            else:
+                require(status != "passed_with_model_limits", "unsupported limited verdict")
     if doc.get("trace_input") is not None:
         require(
             "trace-input.json" in artifacts
@@ -567,10 +639,14 @@ def inspect_report(path: Path, sha: str) -> dict:
             doc.get("errors") == []
             and doc.get("emulator_processes_stopped") is True
             and all(
-                case.get("status") == "passed" and case.get("native_report_inspected") is True
+                case.get("status") in SUCCESS and case.get("native_report_inspected") is True
                 for case in doc["cases"]
             ),
             "passing suite incomplete",
+        )
+        require(
+            doc["status"] == ("passed_with_model_limits" if limited else "passed"),
+            "suite model limitations were changed",
         )
     return {
         "schema_version": PREFIX + "inspection.v1",
