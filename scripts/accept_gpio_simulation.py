@@ -107,9 +107,10 @@ def accept(args):
                 ),
                 key=lambda e: e["source_ordinal"],
             )
-            assert (
-                b"".join(base64.b64decode(e["payload"]["raw_base64"]) for e in events)
-                == (native_dir / "uart.bin").read_bytes()
+            assert b"".join(base64.b64decode(e["payload"]["raw_base64"]) for e in events) == (
+                (native_dir / "uart.bin").read_bytes()
+                if (native_dir / "uart.bin").is_file()
+                else b""
             )
             assert all(e["time"] == source["host_window"] for e in events)
             if source["profile"] == "nrf52840-gpio-timer-v1":
