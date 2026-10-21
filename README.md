@@ -1,6 +1,7 @@
 # HIL Runner
 
-Local 0.6.0 candidate adds fixed Xtensa ESP32-S3 Flash suites, native core/clock
+The published [0.6.0 release](https://github.com/Nitmi/hil-runner/releases/tag/v0.6.0)
+adds fixed Xtensa ESP32-S3 Flash suites, native core/clock
 declarations and runtime identity alongside Renode GPIO/TIMER0 samples and
 model snapshots with explicit coverage/time semantics. It retains ESP-IDF Flash plans and native
 `passed_with_model_limits` verdicts and diagnostics in the separate [simulation suite](docs/simulation.md)
