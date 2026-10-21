@@ -15,6 +15,7 @@ from hil_runner.common import HilError, digest
 
 @pytest.fixture
 def inputs(tmp_path):
+    interpreter = Path(sys.executable).resolve()
     wheel = tmp_path / "sim.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         for name in sim.MODULES:
@@ -43,8 +44,8 @@ def inputs(tmp_path):
             {
                 "schema_version": sim.PREFIX + "spec.v1",
                 "python": {
-                    "path": sys.executable,
-                    "sha256": digest(Path(sys.executable).read_bytes()),
+                    "path": str(interpreter),
+                    "sha256": digest(interpreter.read_bytes()),
                 },
                 "sim_runner_wheel": {"path": str(wheel), "sha256": digest(wheel.read_bytes())},
                 "cases": [
@@ -56,6 +57,19 @@ def inputs(tmp_path):
         )
     )
     return spec
+
+
+def test_interpreter_link_is_rejected(inputs, tmp_path):
+    spec = json.loads(inputs.read_bytes())
+    linked = tmp_path / "linked-python"
+    try:
+        linked.symlink_to(spec["python"]["path"])
+    except OSError:
+        pytest.skip("Symlink creation unavailable")
+    spec["python"]["path"] = str(linked)
+    inputs.write_text(json.dumps(spec))
+    with pytest.raises(HilError, match="links/reparse points"):
+        sim.compile_plan(inputs)
 
 
 def test_plan_is_offline_and_binds_all_package_files(inputs, monkeypatch, tmp_path):
