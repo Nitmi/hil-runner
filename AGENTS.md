@@ -4,7 +4,7 @@
 - Preserve the 0.1 host-only cooperative lease interface. Managed execution may
   launch only fixed, hash-bound embedded-debugger flash-session and runtime
   commands. The separate simulation domain may launch only the fixed, hash-bound
-  sim-runner 0.2.0 or 0.3.0 wheel through an isolated Python bootstrap. It never participates
+  sim-runner 0.2.0, 0.3.0 or 0.4.0 wheel through an isolated Python bootstrap. It never participates
   in hardware leases or falls back to real boards. Never add arbitrary commands
   or automatic recovery/retries. Keep simulated and physical evidence distinct.
 - Keep native confirmation, one-use scope markers, firmware windows, runtime

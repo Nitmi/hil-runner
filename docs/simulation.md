@@ -1,7 +1,7 @@
 # Simulation suites
 
-HIL Runner 0.4.0 provides an optional simulation domain independent of hardware
-leases and managed flash sessions. It coordinates fixed sim-runner 0.2.0 or 0.3.0
+HIL Runner 0.5.0 provides an optional simulation domain independent of hardware
+leases and managed flash sessions. It coordinates fixed sim-runner 0.2.0, 0.3.0 or 0.4.0
 `inspect-plan`, `run` and `inspect-report` commands. sim-runner remains responsible
 for model/runtime identity, firmware assertions, emulator deadlines and cleanup.
 No commands, arbitrary argv, Python scripts, shell, physical board selection,
@@ -9,7 +9,8 @@ recovery/retries or authorization grants are accepted in a simulation spec.
 
 Prepare native Renode or QEMU plans with sim-runner. Select a trusted Python
 3.11+ interpreter and the hash-bound `embedded-sim-runner` wheel. Flash plans require
-0.3.0; Renode/UART and QEMU/RAM plans retain 0.2.0 compatibility. All inputs
+0.3.0 or 0.4.0; GPIO/TIMER0 requires 0.4.0. Renode/UART and QEMU/RAM plans retain
+0.2.0 compatibility. All inputs
 below are local regular files. Agent-generated hashes bind inputs and require
 no manual per-run confirmation. Paths in a spec may be absolute or relative
 to its own directory. Cases have unique portable IDs and run in declared order.
@@ -18,7 +19,7 @@ to its own directory. Cases have unique portable IDs and run in declared order.
 {
   "schema_version": "embedded-hil-runner.simulation-spec.v1",
   "python": {"path": "D:/work/venv/Scripts/python.exe", "sha256": "<interpreter-sha256>"},
-  "sim_runner_wheel": {"path": "D:/work/embedded_sim_runner-0.3.0-py3-none-any.whl", "sha256": "<wheel-sha256>"},
+  "sim_runner_wheel": {"path": "D:/work/embedded_sim_runner-0.4.0-py3-none-any.whl", "sha256": "<wheel-sha256>"},
   "cases": [
     {"id": "build-a", "plan": {"path": "native-a.json", "sha256": "<native-plan-sha256>"}},
     {"id": "build-b", "plan": {"path": "native-b.json", "sha256": "<native-plan-sha256>"}}
@@ -54,7 +55,7 @@ changed model-limit summaries. Inspect success establishes saved consistency,
 not CPU execution, report authenticity or physical coverage.
 
 The wheel is never imported in HIL's process or installed into system Python.
-Its version-specific 13 (0.2.0) or 16 (0.3.0) audited package filenames are checked, hash-bound and staged into a private
+Its version-specific 13 (0.2.0), 16 (0.3.0) or 18 (0.4.0) audited package filenames are checked, hash-bound and staged into a private
 directory; unexpected packages, paths, links or runtime dependencies are rejected.
 The fixed child command is isolated Python `-I -S -B`, loading only this staged
 package ahead of the interpreter's standard library. No PYTHONPATH, user/site
@@ -87,3 +88,19 @@ labels UART as simulation and uses host run windows. Its import/report exit zero
 must not override HIL/native failure. Gate CI on `simulation run` and upload all
 evidence/report artifacts even when that command fails. No physical acceptance
 or hardware authorization can follow from a simulated pass.
+
+For `nrf52840-gpio-timer-v1`, prepare native sim-runner 0.4.0 plans and select
+that wheel. Each case retains `gpio_evidence.samples` and
+`gpio_evidence.model_observations` from native assertions, including null on a
+failed run without evaluated assertions. It also keeps
+`model_coverage_complete=false`, `physical_timing_verified=false` and the native
+GPIO / timer observation semantics. A plain native `passed` means the fixed
+digital scenario passed, not full GPIO/timer/electrical coverage. Native report
+inspection owns the GPIO/IRQ policy; HIL only checks the saved summary matches it.
+Unexpected missing summaries or changed semantics fail. No UART line, snapshot
+or timer tick becomes a physical-board claim or host timestamp.
+
+Trace 0.5.0 preserves this context in inspect/query/Markdown, and binds paused
+model observations to byte spans in raw backend stdout during offline import.
+Those RunFor boundary labels, guest TIMER captures and host run windows remain
+distinct. Native failed cases stop later builds even when Trace import succeeds.

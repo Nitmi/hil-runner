@@ -114,7 +114,7 @@ def test_arbitrary_wheel_modules_and_invalid_zip_rejected():
         sim.package(b"not a zip")
 
 
-def flash_inputs(inputs, *, version="0.3.0"):
+def flash_inputs(inputs, *, version="0.3.0", gpio=False):
     spec = json.loads(inputs.read_bytes())
     wheel = Path(spec["sim_runner_wheel"]["path"])
     with zipfile.ZipFile(wheel, "w") as archive:
@@ -127,7 +127,11 @@ def flash_inputs(inputs, *, version="0.3.0"):
     native = Path(spec["cases"][0]["plan"]["path"])
     plan = json.loads(native.read_bytes())
     plan.update(
-        schema_version="embedded-sim-runner.qemu-flash-plan.v1", profile="esp32c3-idf-flash-v1"
+        schema_version="embedded-sim-runner.gpio-timer-plan.v1"
+        if gpio
+        else "embedded-sim-runner.qemu-flash-plan.v1",
+        profile=sim.GPIO_PROFILE if gpio else "esp32c3-idf-flash-v1",
+        backend="renode" if gpio else "espressif-qemu",
     )
     native.write_text(json.dumps(plan))
     spec["sim_runner_wheel"]["sha256"] = digest(wheel.read_bytes())
@@ -136,20 +140,40 @@ def flash_inputs(inputs, *, version="0.3.0"):
     inputs.write_text(json.dumps(spec))
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0"])
 def test_flash_profile_requires_versioned_module_inventory(inputs, version):
     flash_inputs(inputs, version=version)
     if version == "0.2.0":
         with pytest.raises(HilError, match="require sim-runner 0.3.0"):
             sim.compile_plan(inputs)
     else:
-        assert len(sim.compile_plan(inputs)["package_files"]) == 16
+        assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
+
+
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0"])
+def test_gpio_plan_requires_040_inventory(inputs, version):
+    flash_inputs(inputs, version=version, gpio=True)
+    if version == "0.4.0":
+        assert len(sim.compile_plan(inputs)["package_files"]) == 18
+    else:
+        with pytest.raises(HilError, match="GPIO plans require"):
+            sim.compile_plan(inputs)
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows process supervision")
 @pytest.mark.parametrize(
     "failure",
-    [None, "native-failed", "preflight", "timeout", "startup", "limited", "limited-failed"],
+    [
+        None,
+        "native-failed",
+        "preflight",
+        "timeout",
+        "startup",
+        "limited",
+        "limited-failed",
+        "gpio",
+        "gpio-failed",
+    ],
 )
 def test_suite_stops_and_preserves_native_failure_and_cleanup(
     inputs, tmp_path, monkeypatch, failure
@@ -158,6 +182,9 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
     limited = failure in ("limited", "limited-failed")
     if limited:
         flash_inputs(inputs)
+    gpio = failure in ("gpio", "gpio-failed")
+    if gpio:
+        flash_inputs(inputs, version="0.4.0", gpio=True)
 
     class FakeChild:
         def __init__(self, command, directory, name, *, jsonl):
@@ -176,7 +203,11 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 "physical_board_verified": False,
                 "ok": True,
                 "executables_started": False,
-                "profile": "esp32c3-idf-flash-v1" if limited else "esp32c3-ram-uart-v1",
+                "profile": sim.GPIO_PROFILE
+                if gpio
+                else "esp32c3-idf-flash-v1"
+                if limited
+                else "esp32c3-ram-uart-v1",
             }
             code = 0
             if failure == "preflight" and operation == "inspect-plan":
@@ -188,7 +219,10 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 if failure == "timeout":
                     self.timed_out = True
                     raise HilError("TIMEOUT", "synthetic native timeout")
-                failed = failure in ("native-failed", "limited-failed") and folder.name == "b"
+                failed = (
+                    failure in ("native-failed", "limited-failed", "gpio-failed")
+                    and folder.name == "b"
+                )
                 value.update(
                     ok=not failed,
                     status="failed" if failed else "passed",
@@ -211,6 +245,17 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                         },
                         model_coverage_complete=False,
                         security_features_verified=False,
+                    )
+                if gpio:
+                    value.update(
+                        schema_version="embedded-sim-runner.gpio-timer-report.v1",
+                        model_coverage_complete=False,
+                        physical_timing_verified=False,
+                        gpio_observation_semantics="paused_model_register_snapshot_not_electrical_waveform",
+                        timer_observation_semantics="guest_reported_250kHz_capture_in_TIMER0_IRQ_not_host_time",
+                        assertions=None
+                        if failed
+                        else {"samples": [{"sequence": 1}], "model_observations": [{"phase": 0}]},
                     )
                 (folder / "report.json").write_text(json.dumps(value))
                 code = 1 if failed else 0
@@ -241,8 +286,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             (Path(__file__).parents[1] / "schemas/simulation-report.schema.json").read_bytes()
         ),
     )
-    assert report["ok"] is (failure in (None, "limited"))
-    if failure in ("native-failed", "limited-failed"):
+    assert report["ok"] is (failure in (None, "limited", "gpio"))
+    if failure in ("native-failed", "limited-failed", "gpio-failed"):
         assert attempts == ["a", "b"] and report["cases"][-1]["status"] == "not_run"
         assert len(json.loads((output / "trace-input.json").read_bytes())["sources"]) == 2
     if failure in ("preflight", "startup"):
@@ -268,6 +313,20 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             changed = {**report, "status": "passed"}
             saved.write_text(json.dumps(changed))
             with pytest.raises(HilError, match="limitations were changed"):
+                sim.inspect_report(saved, digest(saved.read_bytes()))
+        saved.write_text(json.dumps(report))
+    if gpio:
+        assert report["cases"][0]["gpio_evidence"]["model_observations"] == [{"phase": 0}]
+        for key, value in (
+            ("gpio_evidence", {}),
+            ("physical_timing_verified", True),
+            ("model_coverage_complete", 0),
+            ("timer_observation_semantics", "host_time"),
+        ):
+            changed = json.loads(json.dumps(report))
+            changed["cases"][0][key] = value
+            saved.write_text(json.dumps(changed))
+            with pytest.raises(HilError, match="GPIO case summary"):
                 sim.inspect_report(saved, digest(saved.read_bytes()))
         saved.write_text(json.dumps(report))
     (output / "plan.json").write_bytes(b"changed")

@@ -1,6 +1,7 @@
 # HIL Runner
 
-Local 0.4.0 candidate adds ESP-IDF Flash plans and preserves native
+Local 0.5.0 candidate adds fixed Renode GPIO/TIMER0 suites, native samples and
+model snapshots with explicit coverage/time semantics. It retains ESP-IDF Flash plans and native
 `passed_with_model_limits` verdicts and diagnostics in the separate [simulation suite](docs/simulation.md)
 domain: fixed hash-bound sim-runner execution, all-case preflight, sequential
 fail-fast cases and an offline Trace input. It never acquires a board lease,

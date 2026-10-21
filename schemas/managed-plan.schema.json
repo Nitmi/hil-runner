@@ -6,7 +6,7 @@
   "required": ["schema_version", "runner_version", "inputs", "ownership", "components", "native_scope", "native_confirm_digest", "runtime_template", "limits", "authorization_granted", "execution_platform", "effects"],
   "properties": {
     "schema_version": {"const": "embedded-hil-runner.managed-plan.v1"},
-    "runner_version": {"enum": ["0.2.0", "0.3.0", "0.4.0"]},
+    "runner_version": {"enum": ["0.2.0", "0.3.0", "0.4.0", "0.5.0"]},
     "inputs": {
       "type": "object", "additionalProperties": false,
       "required": ["spec", "selection", "component_lock", "native_scope", "runtime_template"],

@@ -42,12 +42,15 @@ FLASH_MODULES = MODULES | {
     "qemu_flash.py",
     "assets/esp32c3-idf-flash.json",
 }
-INVENTORIES = {"0.2.0": MODULES, "0.3.0": FLASH_MODULES}
+GPIO_MODULES = FLASH_MODULES | {"gpio_timer.py", "assets/nrf52840-gpio-timer.repl"}
+INVENTORIES = {"0.2.0": MODULES, "0.3.0": FLASH_MODULES, "0.4.0": GPIO_MODULES}
+GPIO_PROFILE = "nrf52840-gpio-timer-v1"
 SUCCESS = ("passed", "passed_with_model_limits")
 PROFILES = {
     "embedded-sim-runner.plan.v1": ("nrf52840-uart-v1", "renode"),
     "embedded-sim-runner.qemu-plan.v1": ("esp32c3-ram-uart-v1", "espressif-qemu"),
     "embedded-sim-runner.qemu-flash-plan.v1": ("esp32c3-idf-flash-v1", "espressif-qemu"),
+    "embedded-sim-runner.gpio-timer-plan.v1": (GPIO_PROFILE, "renode"),
 }
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));"
@@ -122,7 +125,7 @@ def _package(data: bytes) -> dict[str, bytes]:
             for version in INVENTORIES
             if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
         ]
-        require(len(versions) == 1, "requires sim-runner 0.2.0 or 0.3.0 wheel")
+        require(len(versions) == 1, "requires sim-runner 0.2.0, 0.3.0 or 0.4.0 wheel")
         version = versions[0]
         modules = INVENTORIES[version]
         metadata = f"embedded_sim_runner-{version}.dist-info/"
@@ -215,8 +218,12 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
             "unsupported simulation profile",
         )
         require(
-            profile[0] != "esp32c3-idf-flash-v1" or set(files) == FLASH_MODULES,
-            "Flash plans require sim-runner 0.3.0",
+            profile[0] != "esp32c3-idf-flash-v1" or set(files) in (FLASH_MODULES, GPIO_MODULES),
+            "Flash plans require sim-runner 0.3.0 or 0.4.0",
+        )
+        require(
+            profile[0] != GPIO_PROFILE or set(files) == GPIO_MODULES,
+            "GPIO plans require sim-runner 0.4.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -433,6 +440,8 @@ def run(path: Path, sha: str, output: Path) -> dict:
             )
             if row["profile"] == "esp32c3-idf-flash-v1":
                 state.update(model_limits(value))
+            if row["profile"] == GPIO_PROFILE:
+                state.update(gpio_evidence(value))
             native_files.append(report_path)
             for filename, artifact in value["artifacts"].items():
                 require(re.fullmatch(r"[A-Za-z0-9_.-]+", filename), "invalid native artifact name")
@@ -557,6 +566,45 @@ def model_limits(native):
     }
 
 
+def gpio_evidence(native):
+    """Summarize native declarations; only the simulator evaluates GPIO/IRQ policy."""
+    require(
+        native.get("schema_version") == "embedded-sim-runner.gpio-timer-report.v1"
+        and native.get("model_coverage_complete") is False
+        and native.get("physical_timing_verified") is False,
+        "invalid GPIO report/coverage claim",
+        "COMPONENT_FAILED",
+    )
+    labels = {
+        "gpio_observation_semantics": "paused_model_register_snapshot_not_electrical_waveform",
+        "timer_observation_semantics": "guest_reported_250kHz_capture_in_TIMER0_IRQ_not_host_time",
+    }
+    require(
+        all(native.get(k) == v for k, v in labels.items()),
+        "GPIO observation semantics differ",
+        "COMPONENT_FAILED",
+    )
+    assertions = native.get("assertions")
+    require(assertions is None or isinstance(assertions, dict), "invalid GPIO assertions")
+    require(not native["ok"] or isinstance(assertions, dict), "passing GPIO assertions missing")
+    samples, observations = None, None
+    if assertions is not None:
+        samples, observations = assertions.get("samples"), assertions.get("model_observations")
+        require(
+            isinstance(samples, list)
+            and len(samples) <= 64
+            and isinstance(observations, list)
+            and len(observations) <= 16,
+            "invalid GPIO evidence summary",
+        )
+    return {
+        "model_coverage_complete": False,
+        "physical_timing_verified": False,
+        **labels,
+        "gpio_evidence": {"samples": samples, "model_observations": observations},
+    }
+
+
 def inspect_report(path: Path, sha: str) -> dict:
     raw, _ = read(path, 1024 * 1024, sha)
     doc = decode(raw)
@@ -628,6 +676,13 @@ def inspect_report(path: Path, sha: str) -> dict:
                 )
             else:
                 require(status != "passed_with_model_limits", "unsupported limited verdict")
+            if planned["profile"] == GPIO_PROFILE:
+                expected = gpio_evidence(native)
+                require(
+                    json.dumps({k: case.get(k) for k in expected}, sort_keys=True)
+                    == json.dumps(expected, sort_keys=True),
+                    "GPIO case summary differs from native evidence",
+                )
     if doc.get("trace_input") is not None:
         require(
             "trace-input.json" in artifacts
