@@ -1,5 +1,11 @@
 # HIL Runner
 
+Local 0.3.0 candidate adds a separate [simulation suite](docs/simulation.md)
+domain: fixed hash-bound sim-runner execution, all-case preflight, sequential
+fail-fast cases and an offline Trace input. It never acquires a board lease,
+falls back to hardware or requests confirmation per case. Existing lease and
+managed hardware interfaces retain their native authorization and cleanup rules.
+
 HIL Runner 0.2.0 provides cooperative ownership and managed native
 flash/runtime execution. `lease` retains the host-only 0.1 interface described
 below. Windows `managed` holds that ownership across one native bounded flash

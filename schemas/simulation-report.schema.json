@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:embedded-hil-runner:simulation-report:v1", "type": "object",
+  "required": ["schema_version", "execution_kind", "hardware_access", "physical_board_verified", "authorization_granted", "target_cleanup_verified", "ok", "status", "plan_sha256", "component_processes_started", "cases", "calls", "trace_input", "artifacts", "errors", "emulator_processes_stopped", "retries"],
+  "properties": {
+    "schema_version": {"const": "embedded-hil-runner.simulation-report.v1"},
+    "execution_kind": {"const": "simulation"}, "hardware_access": {"const": false},
+    "physical_board_verified": {"const": false}, "authorization_granted": {"const": false},
+    "target_cleanup_verified": {"const": false}, "ok": {"type": "boolean"}, "status": {"enum": ["passed", "failed"]},
+    "component_processes_started": {"type": "boolean"}, "cases": {"type": "array", "minItems": 1, "maxItems": 8},
+    "calls": {"type": "array", "maxItems": 24}, "artifacts": {"type": "object", "maxProperties": 512},
+    "errors": {"type": "array"}, "emulator_processes_stopped": {"type": "boolean"}, "retries": {"const": 0}
+  }
+}

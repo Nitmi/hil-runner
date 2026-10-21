@@ -20,7 +20,15 @@ def main() -> None:
     assert module.is_relative_to(prefix), f"Import is outside installation: {module}"
     version = importlib.metadata.version("embedded-hil-runner")
     assert version == hil_runner.__version__
-    for name in ("result", "managed-spec", "managed-plan", "managed-result"):
+    for name in (
+        "result",
+        "managed-spec",
+        "managed-plan",
+        "managed-result",
+        "simulation-spec",
+        "simulation-plan",
+        "simulation-report",
+    ):
         resource = importlib.resources.files("hil_runner") / "schemas" / f"{name}.schema.json"
         assert json.loads(resource.read_bytes())["$schema"]
     binary = prefix / ("Scripts/hil-runner.exe" if os.name == "nt" else "bin/hil-runner")
@@ -82,7 +90,7 @@ def main() -> None:
                 "ok": True,
                 "version": version,
                 "module": str(module),
-                "schema_count": 4,
+                "schema_count": 7,
                 "hardware_access": False,
             }
         )

@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from . import __version__
+from . import __version__, simulation
 from .common import HilError, report
 from .lease import Lease, bounds
 from .managed import execute, result
@@ -56,11 +56,57 @@ def parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--confirm", required=True, help="once-approved native scope digest")
     serve_parser.add_argument("--allow-runtime-reset", action="store_true")
     serve_parser.add_argument("--output-dir", type=Path, required=True)
+    sim = domains.add_parser("simulation", help="bounded fixed sim-runner suites; no hardware")
+    simulations = sim.add_subparsers(dest="operation", required=True)
+    prep = simulations.add_parser("plan")
+    prep.add_argument("spec", type=Path)
+    prep.add_argument("--output", type=Path, required=True)
+    prep.add_argument("--json", action="store_true")
+    for operation in ("run", "inspect"):
+        item = simulations.add_parser(operation)
+        item.add_argument("input", type=Path)
+        item.add_argument("--sha256", required=True)
+        item.add_argument("--json", action="store_true")
+        if operation == "run":
+            item.add_argument("--output-dir", type=Path, required=True)
     return root
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.domain == "simulation":
+        try:
+            if args.operation == "plan":
+                plan = simulation.compile_plan(args.spec)
+                reference = simulation.json_new(args.output, plan)
+                value = {
+                    **simulation.FLAGS,
+                    "ok": True,
+                    "operation": "simulation.plan",
+                    "component_processes_started": False,
+                    "native_validation_performed": False,
+                    "plan": reference,
+                }
+            elif args.operation == "run":
+                value = simulation.run(args.input, args.sha256, args.output_dir)
+            else:
+                value = simulation.inspect_report(args.input, args.sha256)
+            print(json.dumps(value, ensure_ascii=True))
+            return 0 if value["ok"] else 1
+        except (HilError, OSError, ValueError, KeyError, TypeError) as error:
+            print(
+                json.dumps(
+                    {
+                        **simulation.FLAGS,
+                        "ok": False,
+                        "operation": "simulation." + args.operation,
+                        "errors": [
+                            {"code": getattr(error, "code", "INVALID_INPUT"), "message": str(error)}
+                        ],
+                    }
+                )
+            )
+            return 2
     if args.domain == "managed":
         try:
             if args.operation == "plan":

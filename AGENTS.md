@@ -3,7 +3,10 @@
 - Keep component hardware operations in baud, BLEA and embedded-debugger.
 - Preserve the 0.1 host-only cooperative lease interface. Managed execution may
   launch only fixed, hash-bound embedded-debugger flash-session and runtime
-  commands. Never add arbitrary commands or automatic recovery/retries.
+  commands. The separate simulation domain may launch only the fixed, hash-bound
+  sim-runner 0.2.0 wheel through an isolated Python bootstrap. It never participates
+  in hardware leases or falls back to real boards. Never add arbitrary commands
+  or automatic recovery/retries. Keep simulated and physical evidence distinct.
 - Keep native confirmation, one-use scope markers, firmware windows, runtime
   assertions and target cleanup in the native debugger. A managed plan grants
   no authorization. Declare runtime reset-capture as an additional effect.
