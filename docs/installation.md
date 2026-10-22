@@ -18,9 +18,9 @@ source commit, signer commit and workflow identity. Replace `<asset>` and
 
 ```powershell
 gh attestation verify '<asset>' --repo Nitmi/hil-runner `
-  --source-ref refs/tags/v0.2.0 `
+  --source-ref refs/tags/v0.7.0 `
   --source-digest '<source-commit>' --signer-digest '<source-commit>' `
-  --cert-identity 'https://github.com/Nitmi/hil-runner/.github/workflows/python-release.yml@refs/tags/v0.2.0' `
+  --cert-identity 'https://github.com/Nitmi/hil-runner/.github/workflows/python-release.yml@refs/tags/v0.7.0' `
   --deny-self-hosted-runners --predicate-type https://slsa.dev/provenance/v1
 ```
 
@@ -42,11 +42,11 @@ After verification, create a new environment and install the exact wheel without
 dependency or package-index resolution:
 
 ```powershell
-uv venv --python 3.11 'D:\Code\tools\hil-runner\0.2.0\venv'
-uv pip install --python 'D:\Code\tools\hil-runner\0.2.0\venv\Scripts\python.exe' `
-  --no-index --no-deps '<download-directory>\embedded_hil_runner-0.2.0-py3-none-any.whl'
-& 'D:\Code\tools\hil-runner\0.2.0\venv\Scripts\hil-runner.exe' --version
-& 'D:\Code\tools\hil-runner\0.2.0\venv\Scripts\hil-runner.exe' managed --help
+uv venv --python 3.11 'D:\Code\tools\hil-runner\0.7.0\venv'
+uv pip install --python 'D:\Code\tools\hil-runner\0.7.0\venv\Scripts\python.exe' `
+  --no-index --no-deps '<download-directory>\embedded_hil_runner-0.7.0-py3-none-any.whl'
+& 'D:\Code\tools\hil-runner\0.7.0\venv\Scripts\hil-runner.exe' --version
+& 'D:\Code\tools\hil-runner\0.7.0\venv\Scripts\hil-runner.exe' managed --help
 ```
 
 Use an unused installation directory. Ubuntu uses `venv/bin/python` and
@@ -77,7 +77,7 @@ From a clean committed checkout with the matching tag:
 
 ```powershell
 uv sync --locked --extra dev
-uv run --locked python scripts/release.py build --tag v0.2.0 --output-dir '<new-directory>'
+uv run --locked python scripts/release.py build --tag v0.7.0 --output-dir '<new-directory>'
 ```
 
 The pinned build backend and locked tools produce wheel/source assets plus a

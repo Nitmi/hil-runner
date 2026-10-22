@@ -24,7 +24,7 @@ Development-only `scripts/accept_fault_simulation.py` exercises installed HIL
 and Trace wheels against native plans, including negatives, all-case preflight,
 filtered views, mutation rejection and process cleanup. It never accesses boards.
 
-HIL Runner 0.7.0 is a local candidate for the optional simulation domain independent of hardware
+HIL Runner 0.7.0 provides the optional simulation domain independent of hardware
 leases and managed flash sessions. It coordinates fixed sim-runner 0.2.0 through 0.6.0
 `inspect-plan`, `run` and `inspect-report` commands. sim-runner remains responsible
 for model/runtime identity, firmware assertions, emulator deadlines and cleanup.

@@ -1,12 +1,12 @@
 # HIL Runner
 
-The local 0.7.0 candidate adds sim-runner 0.6.0 GPIO/TIMER0 fault reports.
+The published [0.7.0 release](https://github.com/Nitmi/hil-runner/releases/tag/v0.7.0)
+adds sim-runner 0.6.0 GPIO/TIMER0 fault reports.
 It preserves native fault analysis and failed verdicts, including unknown effects
 after a timeout. Successful injection does not make the suite pass or allow the
-next case to run. This candidate is not a published release.
+next case to run.
 
-The published [0.6.0 release](https://github.com/Nitmi/hil-runner/releases/tag/v0.6.0)
-adds fixed Xtensa ESP32-S3 Flash suites, native core/clock
+It also supports fixed Xtensa ESP32-S3 Flash suites, native core/clock
 declarations and runtime identity alongside Renode GPIO/TIMER0 samples and
 model snapshots with explicit coverage/time semantics. It retains ESP-IDF Flash plans and native
 `passed_with_model_limits` verdicts and diagnostics in the separate [simulation suite](docs/simulation.md)
