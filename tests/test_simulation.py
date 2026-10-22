@@ -130,6 +130,12 @@ def test_arbitrary_wheel_modules_and_invalid_zip_rejected():
         sim.package(b"not a zip")
 
 
+@pytest.mark.parametrize("name", ["../x", "component/../x", "component/evil.js", ".", "..", "/x"])
+def test_native_nested_inventory_is_fixed(name):
+    assert not sim.native_artifact_name(name)
+    assert sim.native_artifact_name("component/esp_emu_bg.wasm")
+
+
 def flash_inputs(inputs, *, version="0.3.0", gpio=False, s3=False):
     spec = json.loads(inputs.read_bytes())
     wheel = Path(spec["sim_runner_wheel"]["path"])
@@ -158,7 +164,35 @@ def flash_inputs(inputs, *, version="0.3.0", gpio=False, s3=False):
     inputs.write_text(json.dumps(spec))
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0"])
+def test_wasm_plan_requires_070_and_its_own_backend(inputs, version):
+    flash_inputs(inputs, version=version)
+    spec = json.loads(inputs.read_bytes())
+    native = Path(spec["cases"][0]["plan"]["path"])
+    doc = json.loads(native.read_bytes()) | {
+        "schema_version": "embedded-sim-runner.esp-wasm-plan.v1",
+        "profile": sim.WASM_PROFILE,
+        "backend": "espressif-esp-emulator-wasm",
+    }
+    native.write_text(json.dumps(doc))
+    for row in spec["cases"]:
+        row["plan"]["sha256"] = digest(native.read_bytes())
+    inputs.write_text(json.dumps(spec))
+    if version == "0.7.0":
+        plan = sim.compile_plan(inputs)
+        assert len(plan["package_files"]) == 24
+        jsonschema.validate(
+            plan,
+            json.loads(
+                (Path(__file__).parents[1] / "schemas/simulation-plan.schema.json").read_bytes()
+            ),
+        )
+    else:
+        with pytest.raises(HilError, match="WASM plans require"):
+            sim.compile_plan(inputs)
+
+
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0"])
 def test_flash_profile_requires_versioned_module_inventory(inputs, version):
     flash_inputs(inputs, version=version)
     if version == "0.2.0":
@@ -233,12 +267,29 @@ def test_fault_profile_requires_060_inventory(inputs, version):
         "fault-unknown",
         "s3",
         "s3-failed",
+        "wasm",
+        "wasm-failed",
+        "wasm-unknown",
     ],
 )
 def test_suite_stops_and_preserves_native_failure_and_cleanup(
     inputs, tmp_path, monkeypatch, failure
 ):
     attempts = []
+    wasm = failure in ("wasm", "wasm-failed", "wasm-unknown")
+    if wasm:
+        flash_inputs(inputs, version="0.7.0")
+        spec = json.loads(inputs.read_bytes())
+        native = Path(spec["cases"][0]["plan"]["path"])
+        value = json.loads(native.read_bytes()) | {
+            "schema_version": "embedded-sim-runner.esp-wasm-plan.v1",
+            "profile": sim.WASM_PROFILE,
+            "backend": "espressif-esp-emulator-wasm",
+        }
+        native.write_text(json.dumps(value))
+        for row in spec["cases"]:
+            row["plan"]["sha256"] = digest(native.read_bytes())
+        inputs.write_text(json.dumps(spec))
     s3 = failure in ("s3", "s3-failed")
     limited = failure in ("limited", "limited-failed") or s3
     if limited:
@@ -276,7 +327,9 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 "physical_board_verified": False,
                 "ok": True,
                 "executables_started": False,
-                "profile": sim.FAULT_PROFILE
+                "profile": sim.WASM_PROFILE
+                if wasm
+                else sim.FAULT_PROFILE
                 if fault
                 else sim.GPIO_PROFILE
                 if gpio
@@ -305,6 +358,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                         "s3-failed",
                         "fault-failed",
                         "fault-unknown",
+                        "wasm-failed",
+                        "wasm-unknown",
                     )
                     and folder.name == "b"
                 )
@@ -382,6 +437,38 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                                 "status": "observed" if failed else "not_requested",
                             },
                         }
+                if wasm:
+                    value.update(
+                        schema_version="embedded-sim-runner.esp-wasm-report.v1",
+                        status="failed" if failed else "passed_with_model_limits",
+                        backend="espressif-esp-emulator-wasm",
+                        backend_version="0.50.0",
+                        runtime_archive_sha256="a" * 64,
+                        virtual_time={
+                            "domain": "esp_emulator_unmeasured_device_clock",
+                            "elapsed_ns": None,
+                            "budget_enforced": False,
+                        },
+                        uart_timestamps_available=False,
+                        uart_representation="ascii_subset_of_wasm_strings_encoded_utf8",
+                        raw_uart_bytes_verified=False,
+                        model_coverage_complete=False,
+                        physical_timing_verified=False,
+                        security_features_verified=False,
+                        initial_state="synthetic",
+                        model_limits=["synthetic string API limit"],
+                        runtime_observation=None if failed else {"restart_performed": False},
+                        assertions=None if failed else {"ready": True},
+                    )
+                    file = folder / "component" / "esp_emu_bg.wasm"
+                    file.parent.mkdir()
+                    file.write_bytes(b"synthetic WASM, never executed")
+                    value["artifacts"] = {
+                        "component/esp_emu_bg.wasm": {
+                            "sha256": digest(file.read_bytes()),
+                            "bytes": file.stat().st_size,
+                        }
+                    }
                 (folder / "report.json").write_text(json.dumps(value))
                 code = 1 if failed else 0
             if operation == "inspect-report":
@@ -411,7 +498,7 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             (Path(__file__).parents[1] / "schemas/simulation-report.schema.json").read_bytes()
         ),
     )
-    assert report["ok"] is (failure in (None, "limited", "gpio", "s3"))
+    assert report["ok"] is (failure in (None, "limited", "gpio", "s3", "wasm"))
     if failure in (
         "native-failed",
         "limited-failed",
@@ -419,6 +506,8 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
         "s3-failed",
         "fault-failed",
         "fault-unknown",
+        "wasm-failed",
+        "wasm-unknown",
     ):
         assert attempts == ["a", "b"] and report["cases"][-1]["status"] == "not_run"
         assert len(json.loads((output / "trace-input.json").read_bytes())["sources"]) == 2
@@ -429,6 +518,16 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
     if failure == "startup":
         assert report["emulator_processes_stopped"] is False
     saved = output / "report.json"
+    if wasm:
+        assert "component/sim_runner/assets/esp_wasm_runner.mjs" in report["artifacts"]
+        assert "runs/a/component/esp_emu_bg.wasm" in report["artifacts"]
+        assert report["cases"][0]["raw_uart_bytes_verified"] is False
+        changed = json.loads(json.dumps(report))
+        changed["cases"][0]["raw_uart_bytes_verified"] = True
+        saved.write_text(json.dumps(changed))
+        with pytest.raises(HilError, match="WASM case declarations"):
+            sim.inspect_report(saved, digest(saved.read_bytes()))
+        saved.write_text(json.dumps(report))
     assert (
         sim.inspect_report(saved, digest(saved.read_bytes()))["report_status"] == report["status"]
     )

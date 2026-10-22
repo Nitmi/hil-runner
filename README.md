@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local 0.8.0 development adds the experimental sim-runner 0.7.0 ESP-EMU WASM
+profile. Qualified outcomes, string UART provenance, opaque initial state,
+unmeasured clock, budget exhaustion and null observations remain explicit in
+[simulation suites](docs/simulation.md). This candidate is not published.
+
 The published [0.7.0 release](https://github.com/Nitmi/hil-runner/releases/tag/v0.7.0)
 adds sim-runner 0.6.0 GPIO/TIMER0 fault reports.
 It preserves native fault analysis and failed verdicts, including unknown effects

@@ -1,5 +1,25 @@
 # Simulation suites
 
+## Experimental ESP-EMU WASM in local 0.8.0
+
+The unpublished 0.8.0 candidate also accepts the fixed sim-runner 0.7.0 wheel
+and `esp32c3-wasm-flash-v1` plan. All older supported profiles remain available
+with the new inventory. Node/runtime/firmware limits and assertion policy stay
+in sim-runner; all cases pass native preflight before any emulator starts.
+
+WASM successes remain `passed_with_model_limits`. Cases copy `model_limits`,
+`initial_state`, `runtime_observation`, `assertions` (including null), the
+unmeasured `virtual_time` and all native errors. `uart.bin` contains the ASCII
+subset of WASM API strings encoded as UTF-8, not verified original UART bytes.
+The requested instruction upper bound and model cycle/clock claims are not
+retired instruction counts or measured timing. A guest restart request stops
+execution without performing a restart; instruction-budget exhaustion fails.
+
+The four fixed `component/` files and host `.mjs` are hash-bound in suite
+evidence. No other nested native paths are accepted. Failed/unknown results
+stop later cases, with partial evidence and host-process cleanup retained.
+This candidate does not activate Toolkit/station or grant hardware access.
+
 ## GPIO/TIMER0 fault evidence
 
 With sim-runner 0.6.0, select the native `nrf52840-gpio-timer-fault-v1` plan.

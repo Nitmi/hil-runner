@@ -46,18 +46,25 @@ FLASH_MODULES = MODULES | {
 GPIO_MODULES = FLASH_MODULES | {"gpio_timer.py", "assets/nrf52840-gpio-timer.repl"}
 S3_MODULES = GPIO_MODULES | {"qemu_s3.py", "assets/esp32s3-idf-flash.json"}
 FAULT_MODULES = S3_MODULES | {"gpio_fault.py"}
+WASM_MODULES = FAULT_MODULES | {
+    "esp_wasm.py",
+    "assets/esp32c3-esp-wasm.json",
+    "assets/esp_wasm_runner.mjs",
+}
 INVENTORIES = {
     "0.2.0": MODULES,
     "0.3.0": FLASH_MODULES,
     "0.4.0": GPIO_MODULES,
     "0.5.0": S3_MODULES,
     "0.6.0": FAULT_MODULES,
+    "0.7.0": WASM_MODULES,
 }
 GPIO_PROFILE = "nrf52840-gpio-timer-v1"
 FAULT_PROFILE = "nrf52840-gpio-timer-fault-v1"
 FAULTS = ("none", "gpio-stuck-low", "gpio-stuck-high", "timer-stop", "timer-irq-mask")
 FAULT_SCOPE = "fixed_paused_model_input_not_physical_fault_or_root_cause_proof"
 S3_PROFILE = "esp32s3-idf-flash-v1"
+WASM_PROFILE = "esp32c3-wasm-flash-v1"
 FLASH_PROFILES = ("esp32c3-idf-flash-v1", S3_PROFILE)
 SUCCESS = ("passed", "passed_with_model_limits")
 PROFILES = {
@@ -67,6 +74,7 @@ PROFILES = {
     "embedded-sim-runner.gpio-timer-plan.v1": (GPIO_PROFILE, "renode"),
     "embedded-sim-runner.qemu-s3-flash-plan.v1": (S3_PROFILE, "espressif-qemu-xtensa"),
     "embedded-sim-runner.gpio-fault-plan.v1": (FAULT_PROFILE, "renode"),
+    "embedded-sim-runner.esp-wasm-plan.v1": (WASM_PROFILE, "espressif-esp-emulator-wasm"),
 }
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));"
@@ -141,7 +149,7 @@ def _package(data: bytes) -> dict[str, bytes]:
             for version in INVENTORIES
             if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
         ]
-        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.6.0 wheel")
+        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.7.0 wheel")
         version = versions[0]
         modules = INVENTORIES[version]
         metadata = f"embedded_sim_runner-{version}.dist-info/"
@@ -235,20 +243,25 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
         )
         require(
             profile[0] != "esp32c3-idf-flash-v1"
-            or set(files) in (FLASH_MODULES, GPIO_MODULES, S3_MODULES, FAULT_MODULES),
-            "Flash plans require sim-runner 0.3.0 through 0.6.0",
+            or set(files) in (FLASH_MODULES, GPIO_MODULES, S3_MODULES, FAULT_MODULES, WASM_MODULES),
+            "Flash plans require sim-runner 0.3.0 through 0.7.0",
         )
         require(
-            profile[0] != GPIO_PROFILE or set(files) in (GPIO_MODULES, S3_MODULES, FAULT_MODULES),
-            "GPIO plans require sim-runner 0.4.0 through 0.6.0",
+            profile[0] != GPIO_PROFILE
+            or set(files) in (GPIO_MODULES, S3_MODULES, FAULT_MODULES, WASM_MODULES),
+            "GPIO plans require sim-runner 0.4.0 through 0.7.0",
         )
         require(
-            profile[0] != S3_PROFILE or set(files) in (S3_MODULES, FAULT_MODULES),
-            "S3 plans require sim-runner 0.5.0 or 0.6.0",
+            profile[0] != S3_PROFILE or set(files) in (S3_MODULES, FAULT_MODULES, WASM_MODULES),
+            "S3 plans require sim-runner 0.5.0 through 0.7.0",
         )
         require(
-            profile[0] != FAULT_PROFILE or set(files) == FAULT_MODULES,
-            "fault plans require sim-runner 0.6.0",
+            profile[0] != FAULT_PROFILE or set(files) in (FAULT_MODULES, WASM_MODULES),
+            "fault plans require sim-runner 0.6.0 or 0.7.0",
+        )
+        require(
+            profile[0] != WASM_PROFILE or set(files) == WASM_MODULES,
+            "WASM plans require sim-runner 0.7.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -467,11 +480,13 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 state.update(model_limits(value))
             if row["profile"] == S3_PROFILE:
                 state.update(s3_evidence(value))
+            if row["profile"] == WASM_PROFILE:
+                state.update(wasm_evidence(value))
             if row["profile"] in (GPIO_PROFILE, FAULT_PROFILE):
                 state.update(gpio_evidence(value))
             native_files.append(report_path)
             for filename, artifact in value["artifacts"].items():
-                require(re.fullmatch(r"[A-Za-z0-9_.-]+", filename), "invalid native artifact name")
+                require(native_artifact_name(filename), "invalid native artifact name")
                 artifact_path = destination / filename
                 read(artifact_path, 16 * 1024 * 1024, artifact["sha256"])
                 native_files.append(artifact_path)
@@ -525,6 +540,7 @@ def run(path: Path, sha: str, output: Path) -> dict:
         "esp32s3_rev0_rom.bin",
         "efuse-initial.bin",
         "efuse-work.bin",
+        "runner.mjs",
     }
     for row in plan["cases"]:
         directory = output / "runs" / row["id"]
@@ -532,12 +548,16 @@ def run(path: Path, sha: str, output: Path) -> dict:
             native_files += [
                 p for p in directory.iterdir() if p.name in partial_names and p.is_file()
             ]
+            native_files += [
+                directory / name for name in WASM_COMPONENTS if (directory / name).is_file()
+            ]
     evidence_paths = [p for p in output.iterdir() if p.is_file()]
     evidence_paths += (
         list((output / "plans").glob("*.json"))
         + list(component.rglob("*.py"))
         + list(component.rglob("*.json"))
         + list(component.rglob("*.repl"))
+        + list(component.rglob("*.mjs"))
         + native_files
     )
     evidence = {
@@ -706,6 +726,66 @@ def s3_evidence(native):
     }
 
 
+WASM_COMPONENTS = {
+    "component/" + name for name in ("esp_emu.js", "esp_emu_bg.wasm", "package.json", "LICENSE")
+}
+WASM_FIELDS = (
+    "backend",
+    "backend_version",
+    "runtime_archive_sha256",
+    "virtual_time",
+    "uart_timestamps_available",
+    "uart_representation",
+    "raw_uart_bytes_verified",
+    "model_coverage_complete",
+    "physical_timing_verified",
+    "security_features_verified",
+    "initial_state",
+    "model_limits",
+    "runtime_observation",
+    "assertions",
+)
+
+
+def native_artifact_name(name):
+    # Only the four fixed WASM files may be nested. No arbitrary paths.
+    return isinstance(name, str) and (
+        re.fullmatch(r"[A-Za-z0-9_.-]+", name) is not None
+        and name not in (".", "..")
+        or name in WASM_COMPONENTS
+    )
+
+
+def wasm_evidence(native):
+    """Copy inspected native declarations; never turn string UART into byte fidelity."""
+    require(
+        native.get("schema_version") == "embedded-sim-runner.esp-wasm-report.v1"
+        and native.get("profile") == WASM_PROFILE
+        and native.get("backend") == "espressif-esp-emulator-wasm"
+        and native.get("raw_uart_bytes_verified") is False
+        and native.get("uart_representation") == "ascii_subset_of_wasm_strings_encoded_utf8"
+        and native.get("virtual_time")
+        == {
+            "domain": "esp_emulator_unmeasured_device_clock",
+            "elapsed_ns": None,
+            "budget_enforced": False,
+        }
+        and native["virtual_time"]["budget_enforced"] is False
+        and all(
+            native.get(k) is False
+            for k in (
+                "uart_timestamps_available",
+                "model_coverage_complete",
+                "physical_timing_verified",
+                "security_features_verified",
+            )
+        )
+        and native.get("status") != "passed",
+        "invalid WASM boundary/qualification",
+    )
+    return {key: copy.deepcopy(native[key]) for key in WASM_FIELDS}
+
+
 def inspect_report(path: Path, sha: str) -> dict:
     raw, _ = read(path, 1024 * 1024, sha)
     doc = decode(raw)
@@ -776,8 +856,15 @@ def inspect_report(path: Path, sha: str) -> dict:
                     == json.dumps(model_limits(native), sort_keys=True),
                     "case model limitations differ from native report",
                 )
-            else:
+            elif planned["profile"] != WASM_PROFILE:
                 require(status != "passed_with_model_limits", "unsupported limited verdict")
+            if planned["profile"] == WASM_PROFILE:
+                expected = wasm_evidence(native)
+                require(
+                    json.dumps({k: case.get(k) for k in expected}, sort_keys=True)
+                    == json.dumps(expected, sort_keys=True),
+                    "WASM case declarations differ from native evidence",
+                )
             if planned["profile"] == S3_PROFILE:
                 expected = s3_evidence(native)
                 require(
