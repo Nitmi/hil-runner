@@ -1,7 +1,31 @@
 # Simulation suites
 
-HIL Runner 0.6.0 provides an optional simulation domain independent of hardware
-leases and managed flash sessions. It coordinates fixed sim-runner 0.2.0, 0.3.0, 0.4.0 or 0.5.0
+## GPIO/TIMER0 fault evidence
+
+With sim-runner 0.6.0, select the native `nrf52840-gpio-timer-fault-v1` plan.
+Its fixed selections are `none`, `gpio-stuck-low`, `gpio-stuck-high`, `timer-stop`
+and `timer-irq-mask`. A selection is an input to the model; it does not prove a
+physical fault or root cause. Plan all-case preflight remains mandatory.
+
+Cases retain `fault_scenario`, `fault_scope`, `fault_request`, `fault_evidence`
+(the complete native assertions or null), `native_errors`, `virtual_time` and
+`gpio_evidence`. The request records a virtual injection boundary of 22 ms;
+paused observations at 20/40/60/80 ms include TIMER0 counter and interrupt enable.
+These requested boundaries and guest samples are distinct from host windows,
+measured timing and electrical waveforms.
+
+Only native sim-runner evaluates the nominal regression and effect. An observed
+injection with a failed nominal test remains `failed`, exits nonzero and stops
+later cases. A timeout without evaluated assertions stays null/unknown, while
+its raw partial artifacts remain saved. Inspection checks summaries against the
+saved native report, without launching a component or rerunning policy.
+
+Development-only `scripts/accept_fault_simulation.py` exercises installed HIL
+and Trace wheels against native plans, including negatives, all-case preflight,
+filtered views, mutation rejection and process cleanup. It never accesses boards.
+
+HIL Runner 0.7.0 is a local candidate for the optional simulation domain independent of hardware
+leases and managed flash sessions. It coordinates fixed sim-runner 0.2.0 through 0.6.0
 `inspect-plan`, `run` and `inspect-report` commands. sim-runner remains responsible
 for model/runtime identity, firmware assertions, emulator deadlines and cleanup.
 No commands, arbitrary argv, Python scripts, shell, physical board selection,
@@ -9,8 +33,8 @@ recovery/retries or authorization grants are accepted in a simulation spec.
 
 Prepare native Renode or QEMU plans with sim-runner. Select a trusted Python
 3.11+ interpreter and the hash-bound `embedded-sim-runner` wheel. Flash plans require
-0.3.0 or newer supported wheels; GPIO/TIMER0 requires 0.4.0 or 0.5.0;
-ESP32-S3 requires 0.5.0. Renode/UART and QEMU/RAM plans retain
+0.3.0 or newer supported wheels; GPIO/TIMER0 requires 0.4.0 through 0.6.0;
+ESP32-S3 requires 0.5.0 or 0.6.0; GPIO/TIMER0 faults require 0.6.0. Renode/UART and QEMU/RAM plans retain
 0.2.0 compatibility. All inputs
 below are local regular files. Agent-generated hashes bind inputs and require
 no manual per-run confirmation. Paths in a spec may be absolute or relative
@@ -56,7 +80,7 @@ changed model-limit summaries. Inspect success establishes saved consistency,
 not CPU execution, report authenticity or physical coverage.
 
 The wheel is never imported in HIL's process or installed into system Python.
-Its version-specific 13 (0.2.0), 16 (0.3.0), 18 (0.4.0) or 20 (0.5.0) audited package filenames are checked, hash-bound and staged into a private
+Its version-specific 13 (0.2.0), 16 (0.3.0), 18 (0.4.0), 20 (0.5.0) or 21 (0.6.0) audited package filenames are checked, hash-bound and staged into a private
 directory; unexpected packages, paths, links or runtime dependencies are rejected.
 The fixed child command is isolated Python `-I -S -B`, loading only this staged
 package ahead of the interpreter's standard library. No PYTHONPATH, user/site

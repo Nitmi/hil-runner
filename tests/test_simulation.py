@@ -158,7 +158,7 @@ def flash_inputs(inputs, *, version="0.3.0", gpio=False, s3=False):
     inputs.write_text(json.dumps(spec))
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"])
 def test_flash_profile_requires_versioned_module_inventory(inputs, version):
     flash_inputs(inputs, version=version)
     if version == "0.2.0":
@@ -168,24 +168,24 @@ def test_flash_profile_requires_versioned_module_inventory(inputs, version):
         assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"])
 def test_gpio_plan_requires_040_inventory(inputs, version):
     flash_inputs(inputs, version=version, gpio=True)
-    if version in ("0.4.0", "0.5.0"):
+    if version in ("0.4.0", "0.5.0", "0.6.0"):
         assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
     else:
         with pytest.raises(HilError, match="GPIO plans require"):
             sim.compile_plan(inputs)
 
 
-@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0"])
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"])
 def test_s3_requires_050_inventory_and_its_own_backend(inputs, version):
     flash_inputs(inputs, version=version, s3=True)
-    if version != "0.5.0":
+    if version not in ("0.5.0", "0.6.0"):
         with pytest.raises(HilError, match="S3 plans require"):
             sim.compile_plan(inputs)
     else:
-        assert len(sim.compile_plan(inputs)["package_files"]) == 20
+        assert len(sim.compile_plan(inputs)["package_files"]) == len(sim.INVENTORIES[version])
         spec = json.loads(inputs.read_bytes())
         native = Path(spec["cases"][0]["plan"]["path"])
         doc = json.loads(native.read_bytes()) | {"backend": "espressif-qemu"}
@@ -194,6 +194,25 @@ def test_s3_requires_050_inventory_and_its_own_backend(inputs, version):
             row["plan"]["sha256"] = digest(native.read_bytes())
         inputs.write_text(json.dumps(spec))
         with pytest.raises(HilError, match="unsupported simulation profile"):
+            sim.compile_plan(inputs)
+
+
+@pytest.mark.parametrize("version", ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"])
+def test_fault_profile_requires_060_inventory(inputs, version):
+    flash_inputs(inputs, version=version, gpio=True)
+    spec = json.loads(inputs.read_bytes())
+    native = Path(spec["cases"][0]["plan"]["path"])
+    doc = json.loads(native.read_bytes())
+    doc.update(schema_version="embedded-sim-runner.gpio-fault-plan.v1", profile=sim.FAULT_PROFILE)
+    native.write_text(json.dumps(doc))
+    for row in spec["cases"]:
+        row["plan"]["sha256"] = digest(native.read_bytes())
+    inputs.write_text(json.dumps(spec))
+    if version == "0.6.0":
+        plan = sim.compile_plan(inputs)
+        assert len(plan["package_files"]) == 21
+    else:
+        with pytest.raises(HilError, match="fault plans require"):
             sim.compile_plan(inputs)
 
 
@@ -210,6 +229,8 @@ def test_s3_requires_050_inventory_and_its_own_backend(inputs, version):
         "limited-failed",
         "gpio",
         "gpio-failed",
+        "fault-failed",
+        "fault-unknown",
         "s3",
         "s3-failed",
     ],
@@ -222,9 +243,21 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
     limited = failure in ("limited", "limited-failed") or s3
     if limited:
         flash_inputs(inputs, version="0.5.0" if s3 else "0.3.0", s3=s3)
-    gpio = failure in ("gpio", "gpio-failed")
+    fault = failure in ("fault-failed", "fault-unknown")
+    gpio = failure in ("gpio", "gpio-failed") or fault
     if gpio:
-        flash_inputs(inputs, version="0.4.0", gpio=True)
+        flash_inputs(inputs, version="0.6.0" if fault else "0.4.0", gpio=True)
+        if fault:
+            spec = json.loads(inputs.read_bytes())
+            native = Path(spec["cases"][0]["plan"]["path"])
+            value = json.loads(native.read_bytes())
+            value.update(
+                schema_version="embedded-sim-runner.gpio-fault-plan.v1", profile=sim.FAULT_PROFILE
+            )
+            native.write_text(json.dumps(value))
+            for row in spec["cases"]:
+                row["plan"]["sha256"] = digest(native.read_bytes())
+            inputs.write_text(json.dumps(spec))
 
     class FakeChild:
         def __init__(self, command, directory, name, *, jsonl):
@@ -243,7 +276,9 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 "physical_board_verified": False,
                 "ok": True,
                 "executables_started": False,
-                "profile": sim.GPIO_PROFILE
+                "profile": sim.FAULT_PROFILE
+                if fault
+                else sim.GPIO_PROFILE
                 if gpio
                 else sim.S3_PROFILE
                 if s3
@@ -262,7 +297,15 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                     self.timed_out = True
                     raise HilError("TIMEOUT", "synthetic native timeout")
                 failed = (
-                    failure in ("native-failed", "limited-failed", "gpio-failed", "s3-failed")
+                    failure
+                    in (
+                        "native-failed",
+                        "limited-failed",
+                        "gpio-failed",
+                        "s3-failed",
+                        "fault-failed",
+                        "fault-unknown",
+                    )
                     and folder.name == "b"
                 )
                 value.update(
@@ -313,6 +356,32 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                     )
                     if not failed:
                         value["assertions"]["app_core_markers"] = [0, 1]
+                if fault:
+                    value.update(
+                        schema_version="embedded-sim-runner.gpio-fault-report.v1",
+                        fault_scenario="timer-stop" if failed else "none",
+                        fault_scope=sim.FAULT_SCOPE,
+                        virtual_time={
+                            "domain": "renode_emulation",
+                            "requested_ms": 82,
+                            "completed": not (failed and failure == "fault-unknown"),
+                        },
+                    )
+                    if failure == "fault-unknown" and failed:
+                        value["assertions"] = None
+                        value["errors"] = [{"code": "TIMEOUT"}]
+                    else:
+                        value["assertions"] = {
+                            "samples": [],
+                            "model_observations": [],
+                            "nominal_regression_passed": not failed,
+                            "nominal_failure": "synthetic IRQ failure" if failed else None,
+                            "fault": {
+                                "id": value["fault_scenario"],
+                                "effect_observed": True if failed else None,
+                                "status": "observed" if failed else "not_requested",
+                            },
+                        }
                 (folder / "report.json").write_text(json.dumps(value))
                 code = 1 if failed else 0
             if operation == "inspect-report":
@@ -343,7 +412,14 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
         ),
     )
     assert report["ok"] is (failure in (None, "limited", "gpio", "s3"))
-    if failure in ("native-failed", "limited-failed", "gpio-failed", "s3-failed"):
+    if failure in (
+        "native-failed",
+        "limited-failed",
+        "gpio-failed",
+        "s3-failed",
+        "fault-failed",
+        "fault-unknown",
+    ):
         assert attempts == ["a", "b"] and report["cases"][-1]["status"] == "not_run"
         assert len(json.loads((output / "trace-input.json").read_bytes())["sources"]) == 2
     if failure in ("preflight", "startup"):
@@ -390,7 +466,28 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
             with pytest.raises(HilError, match="S3 case identity"):
                 sim.inspect_report(saved, digest(saved.read_bytes()))
         saved.write_text(json.dumps(report))
-    if gpio:
+    if fault:
+        failed = report["cases"][1]
+        assert failed["status"] == "failed" and report["cases"][2]["status"] == "not_run"
+        assert failed["fault_scenario"] == "timer-stop"
+        if failure == "fault-unknown":
+            assert failed["fault_evidence"] is None and failed["virtual_time"]["completed"] is False
+        else:
+            assert failed["fault_evidence"]["fault"]["effect_observed"] is True
+            assert failed["fault_evidence"]["nominal_regression_passed"] is False
+        for key, value in (
+            ("fault_evidence", {}),
+            ("fault_scenario", "none"),
+            ("native_errors", []),
+            ("virtual_time", {}),
+        ):
+            changed = json.loads(json.dumps(report))
+            changed["cases"][1][key] = value
+            saved.write_text(json.dumps(changed))
+            with pytest.raises(HilError, match="GPIO case summary"):
+                sim.inspect_report(saved, digest(saved.read_bytes()))
+        saved.write_text(json.dumps(report))
+    if gpio and not fault:
         assert report["cases"][0]["gpio_evidence"]["model_observations"] == [{"phase": 0}]
         for key, value in (
             ("gpio_evidence", {}),
