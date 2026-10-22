@@ -455,7 +455,10 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 inspect_code == 0
                 and inspected.get("ok") is True
                 and inspected.get("executables_started") is False
-                and inspected.get("report_status") == value.get("status"),
+                and inspected.get(
+                    "recorded_status" if row["profile"] == WASM_PROFILE else "report_status"
+                )
+                == value.get("status"),
                 "native report integrity failed",
                 "COMPONENT_FAILED",
             )

@@ -473,7 +473,7 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
                 code = 1 if failed else 0
             if operation == "inspect-report":
                 report = json.loads(Path(self.args[2]).read_bytes())
-                value["report_status"] = report["status"]
+                value["recorded_status" if wasm else "report_status"] = report["status"]
             raw = json.dumps(value).encode()
             (self.directory / (self.name + ".stdout.bin")).write_bytes(raw)
             (self.directory / (self.name + ".stderr.log")).write_bytes(b"")
