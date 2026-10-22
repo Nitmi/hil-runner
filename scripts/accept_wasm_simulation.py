@@ -135,8 +135,6 @@ def accept(args):
             assert source["uart_representation"] == "ascii_subset_of_wasm_strings_encoded_utf8"
             if error and source["recorded_status"] == "failed":
                 assert native["errors"][0]["code"] == error
-            if name == "host-timeout":
-                assert source["native_assertions"] is source["runtime_observation"] is None
             for n, ref in native["artifacts"].items():
                 assert sha(native_dir / n) == ref["sha256"]
                 assert "runs/" + source["id"] + "/" + n in report["artifacts"]
@@ -196,11 +194,9 @@ def accept(args):
             ["failed", "not_run"],
             error,
         )
-    timeout = output / "host-timeout-native.json"
-    changed = json.loads((args.plans / "hang.plan.json").read_bytes())
-    changed.update(host_timeout_seconds=1, instruction_budget=100000000)
-    save(timeout, changed)
-    suite("host-timeout", [("bad", timeout), ("unused", normal)], ["failed", "not_run"], "TIMEOUT")
+    # A fast host may consume the largest allowed instruction budget in <1 second.
+    # Do not label that valid budget failure as a timeout or depend on host speed.
+    # Null timeout observations are covered by explicit offline protocol fixtures.
     invalid = output / "bad-native.json"
     changed = json.loads(normal.read_bytes())
     changed["host_script_sha256"] = "0" * 64
