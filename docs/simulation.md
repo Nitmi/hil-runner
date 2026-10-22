@@ -1,8 +1,8 @@
 # Simulation suites
 
-## Experimental ESP-EMU WASM in local 0.8.0
+## Experimental ESP-EMU WASM in 0.8.0
 
-The unpublished 0.8.0 candidate also accepts the fixed sim-runner 0.7.0 wheel
+HIL Runner 0.8.0 also accepts the fixed sim-runner 0.7.0 wheel
 and `esp32c3-wasm-flash-v1` plan. All older supported profiles remain available
 with the new inventory. Node/runtime/firmware limits and assertion policy stay
 in sim-runner; all cases pass native preflight before any emulator starts.
@@ -18,7 +18,7 @@ execution without performing a restart; instruction-budget exhaustion fails.
 The four fixed `component/` files and host `.mjs` are hash-bound in suite
 evidence. No other nested native paths are accepted. Failed/unknown results
 stop later cases, with partial evidence and host-process cleanup retained.
-This candidate does not activate Toolkit/station or grant hardware access.
+Installing this component does not activate Toolkit/station or grant hardware access.
 
 ## GPIO/TIMER0 fault evidence
 
