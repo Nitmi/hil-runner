@@ -1,5 +1,9 @@
 # HIL Runner
 
+Local **0.9.0** adds [offline instrument evidence import](docs/instrument.md):
+preserve a native logic verification/JUnit result and its original inputs in one
+hash-bound artifact, retaining failed and invalid evidence without hardware access.
+
 The published [0.8.0 release](https://github.com/Nitmi/hil-runner/releases/tag/v0.8.0) adds the experimental sim-runner 0.7.0 ESP-EMU WASM
 profile. Qualified outcomes, string UART provenance, opaque initial state,
 unmeasured clock, budget exhaustion and null observations remain explicit in

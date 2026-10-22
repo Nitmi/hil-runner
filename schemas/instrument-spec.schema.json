@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:embedded-hil-runner:instrument-spec:v1",
+  "title": "Explicit saved native instrument verification inputs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "native_exit_code", "inputs"],
+  "properties": {
+    "schema_version": {"const": "embedded-hil-runner.instrument-spec.v1"},
+    "native_exit_code": {"type": "integer", "enum": [0, 3]},
+    "inputs": {
+      "type": "object", "additionalProperties": false,
+      "required": ["report", "spec", "capture", "native_result", "junit"],
+      "properties": {
+        "report": {"$ref": "#/$defs/input"}, "spec": {"$ref": "#/$defs/input"},
+        "capture": {"$ref": "#/$defs/input"}, "native_result": {"$ref": "#/$defs/input"},
+        "junit": {"$ref": "#/$defs/input"}
+      }
+    }
+  },
+  "$defs": {
+    "input": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    }
+  }
+}

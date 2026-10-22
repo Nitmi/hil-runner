@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from . import __version__, simulation
+from . import __version__, instrument, simulation
 from .common import HilError, report
 from .lease import Lease, bounds
 from .managed import execute, result
@@ -28,6 +28,17 @@ def parser() -> argparse.ArgumentParser:
     )
     root.add_argument("--version", action="version", version=f"hil-runner {__version__}")
     domains = root.add_subparsers(dest="domain", required=True)
+    instruments = domains.add_parser(
+        "instrument", help="offline recorded native logic verification"
+    )
+    imports = instruments.add_subparsers(dest="operation", required=True)
+    for operation in ("import", "inspect"):
+        item = imports.add_parser(operation)
+        item.add_argument("input", type=Path)
+        item.add_argument("--sha256", required=True)
+        item.add_argument("--json", action="store_true")
+        if operation == "import":
+            item.add_argument("--output", type=Path, required=True)
     lease = domains.add_parser("lease")
     commands = lease.add_subparsers(dest="operation", required=True)
     for name in ("plan", "serve"):
@@ -74,6 +85,38 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.domain == "instrument":
+        try:
+            if args.operation == "import":
+                value, ref = instrument.import_evidence(args.input, args.sha256, args.output)
+                data = instrument.summary(value, ref)
+                data["output"] = ref
+                code = 0 if value["ok"] else 3
+            else:
+                value, ref = instrument.load(args.input, args.sha256)
+                data = instrument.summary(value, ref)
+                code = 0
+            instrument_result = {
+                "schema_version": "embedded-hil-runner.instrument-result.v1",
+                "ok": code == 0,
+                "operation": "instrument." + args.operation,
+                "scope": "host_only_saved_instrument_import",
+                **instrument.FLAGS,
+                "data": data,
+            }
+        except (HilError, OSError, ValueError, KeyError, TypeError, RecursionError) as error:
+            code = 2
+            instrument_result = {
+                "schema_version": "embedded-hil-runner.instrument-result.v1",
+                "ok": False,
+                "operation": "instrument." + args.operation,
+                **instrument.FLAGS,
+                "errors": [
+                    {"code": getattr(error, "code", "INVALID_INPUT"), "message": str(error)[:1024]}
+                ],
+            }
+        print(instrument.canonical(instrument_result).decode("ascii"), end="")
+        return code
     if args.domain == "simulation":
         try:
             if args.operation == "plan":

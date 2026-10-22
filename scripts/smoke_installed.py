@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import importlib.resources
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -28,6 +30,8 @@ def main() -> None:
         "simulation-spec",
         "simulation-plan",
         "simulation-report",
+        "instrument-spec",
+        "instrument-report",
     ):
         resource = importlib.resources.files("hil_runner") / "schemas" / f"{name}.schema.json"
         assert json.loads(resource.read_bytes())["$schema"]
@@ -59,8 +63,14 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="hil-installed-smoke-") as directory:
         work = Path(directory)
 
-        def run(*args):
-            result = subprocess.run(args, cwd=work, capture_output=True, check=True, timeout=10)
+        def run(*args, expected=0):
+            result = subprocess.run(args, cwd=work, capture_output=True, check=False, timeout=10)
+            assert result.returncode == expected, (
+                args,
+                result.returncode,
+                result.stdout,
+                result.stderr,
+            )
             assert not result.stderr, result.stderr
             return result.stdout
 
@@ -84,13 +94,47 @@ def main() -> None:
         )
         assert report["ok"] and not report["hardware_access"]
         assert report["data"]["effects"] == [] and not (work / "leases").exists()
+        examples = Path(__file__).resolve().parents[1] / "examples/instrument"
+        for scenario in ("passed", "failed", "invalid", "mixed"):
+            selected = work / scenario
+            shutil.copytree(examples / scenario, selected)
+            manifest = selected / "import.json"
+            output = selected / "bundle.json"
+            imported = json.loads(
+                run(
+                    str(binary),
+                    "instrument",
+                    "import",
+                    str(manifest),
+                    "--sha256",
+                    hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                    "--output",
+                    str(output),
+                    "--json",
+                    expected=0 if scenario == "passed" else 3,
+                )
+            )
+            assert imported["data"]["verdict_ok"] is (scenario == "passed")
+            inspected = json.loads(
+                run(
+                    str(binary),
+                    "instrument",
+                    "inspect",
+                    str(output),
+                    "--sha256",
+                    imported["data"]["output"]["sha256"],
+                    "--json",
+                )
+            )
+            assert inspected["ok"] and inspected["data"]["verdict_ok"] is (scenario == "passed")
     print(
         json.dumps(
             {
                 "ok": True,
                 "version": version,
                 "module": str(module),
-                "schema_count": 7,
+                "schema_count": 9,
+                "instrument_cases_verified": 4,
                 "hardware_access": False,
             }
         )

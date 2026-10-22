@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0 — Local candidate
+
+- Offline instrument import/inspect binds recorded native verification, original
+  inputs and canonical JUnit into a self-contained, bounded artifact.
+- Preserve native assertion failures, invalid evidence, cleanup and source origin;
+  distinguish recorded recomputation from current host-only consistency checks.
+- No device access, executable launch or new runtime dependency in this domain.
+
 ## 0.2.0 - 2026-10-19
 
 - Cooperative OS file-lock leases with bounded lifetimes, conflict detection,

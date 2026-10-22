@@ -4,7 +4,7 @@
   "type": "object",
   "required": ["schema_version", "runner_version", "execution_kind", "hardware_access", "physical_board_verified", "authorization_granted", "target_cleanup_verified", "component_processes_started", "native_validation_performed", "inputs", "package_files", "cases", "component_timeout_seconds", "retries", "python_runtime_coverage"],
   "properties": {
-    "schema_version": {"const": "embedded-hil-runner.simulation-plan.v1"}, "runner_version": {"const": "0.8.0"},
+    "schema_version": {"const": "embedded-hil-runner.simulation-plan.v1"}, "runner_version": {"const": "0.9.0"},
     "execution_kind": {"const": "simulation"}, "hardware_access": {"const": false},
     "physical_board_verified": {"const": false}, "authorization_granted": {"const": false},
     "target_cleanup_verified": {"const": false}, "component_processes_started": {"const": false},
