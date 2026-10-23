@@ -32,6 +32,8 @@ def main() -> None:
         "simulation-report",
         "instrument-spec",
         "instrument-report",
+        "waveform-spec",
+        "waveform-report",
     ):
         resource = importlib.resources.files("hil_runner") / "schemas" / f"{name}.schema.json"
         assert json.loads(resource.read_bytes())["$schema"]
@@ -127,14 +129,52 @@ def main() -> None:
                 )
             )
             assert inspected["ok"] and inspected["data"]["verdict_ok"] is (scenario == "passed")
+        examples = Path(__file__).resolve().parents[1] / "examples/waveform"
+        for scenario in ("passed", "failed", "invalid", "mixed", "sds"):
+            selected = work / ("waveform-" + scenario)
+            shutil.copytree(examples / scenario, selected)
+            manifest = selected / "import.json"
+            output = selected / "bundle.json"
+            imported = json.loads(
+                run(
+                    str(binary),
+                    "waveform",
+                    "import",
+                    str(manifest),
+                    "--sha256",
+                    hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                    "--output",
+                    str(output),
+                    "--json",
+                    expected=0 if scenario in ("passed", "sds") else 3,
+                )
+            )
+            assert imported["data"]["verdict_ok"] is (scenario in ("passed", "sds"))
+            inspected = json.loads(
+                run(
+                    str(binary),
+                    "waveform",
+                    "inspect",
+                    str(output),
+                    "--sha256",
+                    imported["data"]["output"]["sha256"],
+                    "--json",
+                )
+            )
+            assert (
+                inspected["ok"]
+                and inspected["data"]["verdict_ok"] is imported["data"]["verdict_ok"]
+            )
+            assert not inspected["data"]["native_recomputed_now"]
     print(
         json.dumps(
             {
                 "ok": True,
                 "version": version,
                 "module": str(module),
-                "schema_count": 9,
+                "schema_count": 11,
                 "instrument_cases_verified": 4,
+                "waveform_cases_verified": 5,
                 "hardware_access": False,
             }
         )

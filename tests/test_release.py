@@ -13,28 +13,39 @@ VERSION = "0.2.0"
 REVISION = "a" * 40
 
 
-def archives(directory, *, wheel_mutation=None, source_mutation=None):
+def archives(directory, *, wheel_mutation=None, source_mutation=None, version=VERSION):
     """Small independent package fixture; never extract or import its contents."""
-    metadata = "embedded_hil_runner-0.2.0.dist-info/"
+    metadata = f"embedded_hil_runner-{version}.dist-info/"
     wheel = {
-        metadata
-        + "METADATA": b"Name: embedded-hil-runner\nVersion: 0.2.0\nRequires-Python: >=3.11\n",
+        metadata + "METADATA": (
+            f"Name: embedded-hil-runner\nVersion: {version}\nRequires-Python: >=3.11\n"
+        ).encode(),
         metadata + "entry_points.txt": b"[console_scripts]\nhil-runner = hil_runner.cli:main\n",
         "hil_runner/managed.py": b"# synthetic source\n",
         "hil_runner/schemas/managed-plan.schema.json": b"{}\n",
     }
     source = {
-        "pyproject.toml": b'[project]\nname="embedded-hil-runner"\nversion="0.2.0"\n',
+        "pyproject.toml": f'[project]\nname="embedded-hil-runner"\nversion="{version}"\n'.encode(),
         "README.md": b"fixture\n",
         "LICENSE": b"fixture\n",
         "src/hil_runner/managed.py": wheel["hil_runner/managed.py"],
         "schemas/managed-plan.schema.json": b"{}\n",
     }
+    if tuple(map(int, version.split("."))) >= (0, 10, 0):
+        for name in (
+            "waveform.py",
+            "schemas/waveform-spec.schema.json",
+            "schemas/waveform-report.schema.json",
+        ):
+            wheel["hil_runner/" + name] = b"# fixture\n" if name.endswith(".py") else b"{}\n"
+            source[("" if name.startswith("schemas/") else "src/hil_runner/") + name] = wheel[
+                "hil_runner/" + name
+            ]
     if wheel_mutation:
         wheel_mutation(wheel)
     if source_mutation:
         source_mutation(source)
-    wheel_name, source_name = release.names(VERSION)
+    wheel_name, source_name = release.names(version)
     with zipfile.ZipFile(directory / wheel_name, "w") as archive:
         for name, data in wheel.items():
             item = zipfile.ZipInfo("placeholder")
@@ -42,7 +53,7 @@ def archives(directory, *, wheel_mutation=None, source_mutation=None):
             archive.writestr(item, data)
     with tarfile.open(directory / source_name, "w:gz") as archive:
         for name, data in source.items():
-            item = tarfile.TarInfo("embedded_hil_runner-0.2.0/" + name)
+            item = tarfile.TarInfo(f"embedded_hil_runner-{version}/" + name)
             item.size = len(data)
             archive.addfile(item, io.BytesIO(data))
 
@@ -56,6 +67,24 @@ def test_verified_release_binds_source_without_claiming_authenticity(tmp_path):
     assert not report["publisher_authenticity_verified"]
     with pytest.raises(ValueError, match="Source revision differs"):
         release.verify(tmp_path, "b" * 40)
+
+
+def test_waveform_release_binds_runtime_and_schemas(tmp_path):
+    archives(tmp_path, version="0.10.0")
+    release.create_manifest(tmp_path, "0.10.0", REVISION)
+    assert release.verify(tmp_path, REVISION)["ok"]
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["waveform.py", "schemas/waveform-spec.schema.json", "schemas/waveform-report.schema.json"],
+)
+def test_waveform_release_requires_new_runtime_members(tmp_path, name):
+    archives(
+        tmp_path, version="0.10.0", wheel_mutation=lambda wheel: wheel.pop("hil_runner/" + name)
+    )
+    with pytest.raises(ValueError, match="Missing waveform runtime files"):
+        release.create_manifest(tmp_path, "0.10.0", REVISION)
 
 
 @pytest.mark.parametrize("name", [*release.names(VERSION), "release-manifest.json", "SHA256SUMS"])

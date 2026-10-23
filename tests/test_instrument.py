@@ -170,7 +170,7 @@ def test_unsafe_manifest_paths_stop_before_input_read(tmp_path, value):
     [
         ("ok", 1),
         ("status", "failed"),
-        ("producer_version", "0.10.0"),
+        ("producer_version", "99.0.0"),
         ("native_exit_code", True),
         ("native_recomputation_recorded", False),
         ("validation_kind", "fully_authenticated"),

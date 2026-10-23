@@ -102,6 +102,18 @@ def payloads(directory: Path, version: str, snapshots: dict | None = None) -> tu
         "hil_runner/managed.py" in wheel and "hil_runner/schemas/managed-plan.schema.json" in wheel,
         "Missing runtime files",
     )
+    if tuple(map(int, version.split("."))) >= (0, 10, 0):
+        require(
+            all(
+                name in wheel
+                for name in (
+                    "hil_runner/waveform.py",
+                    "hil_runner/schemas/waveform-spec.schema.json",
+                    "hil_runner/schemas/waveform-report.schema.json",
+                )
+            ),
+            "Missing waveform runtime files",
+        )
     source = {}
     prefix = f"embedded_hil_runner-{version}/"
     total = 0
@@ -109,7 +121,7 @@ def payloads(directory: Path, version: str, snapshots: dict | None = None) -> tu
         for item in archive:
             total += item.size
             require(
-                len(source) < 256 and 0 <= item.size <= MAX_FILE and total <= MAX_FILE,
+                len(source) < 512 and 0 <= item.size <= MAX_FILE and total <= MAX_FILE,
                 "Source archive too large",
             )
             safe_member(item.name)

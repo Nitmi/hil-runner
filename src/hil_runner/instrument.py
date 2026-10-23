@@ -323,7 +323,7 @@ def junit_bytes(report, report_sha):
 
 
 def build(spec_blob, blobs, producer_version):
-    require(producer_version == "0.9.0", "unsupported HIL instrument producer")
+    require(producer_version in ("0.9.0", "0.10.0"), "unsupported HIL instrument producer")
     spec = decode(unpack(spec_blob, 16384))
     validate_spec(spec)
     exact(blobs, LIMITS)

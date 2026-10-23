@@ -1,0 +1,1 @@
+{"checks":[{"channel":1,"expect":{"mean_v":{"maximum":100,"minimum":-100}},"id":"sds","window":{"end_exclusive":16,"start":0}}],"schema_version":"lab-instruments.waveform-check-spec.v1","source_kind":"sds804x"}

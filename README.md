@@ -1,6 +1,10 @@
 # HIL Runner
 
-Local **0.9.0** adds [offline instrument evidence import](docs/instrument.md):
+Local **0.10.0** adds [saved analog waveform import](docs/waveform.md) for
+lab-instruments 0.9.0 AD3 and SDS804X checks, preserving original bytes,
+voltage metrics, failed/invalid verdicts and recorded JUnit verification.
+
+The **0.9.0** release adds [offline instrument evidence import](docs/instrument.md):
 preserve a native logic verification/JUnit result and its original inputs in one
 hash-bound artifact, retaining failed and invalid evidence without hardware access.
 
