@@ -130,6 +130,39 @@ def main() -> None:
             )
             assert inspected["ok"] and inspected["data"]["verdict_ok"] is (scenario == "passed")
         examples = Path(__file__).resolve().parents[1] / "examples/waveform"
+        digital09 = Path(__file__).resolve().parents[1] / "examples/instrument-09"
+        for scenario in ("passed", "failed", "invalid", "mixed", "legacy"):
+            selected = work / ("digital09-" + scenario)
+            shutil.copytree(digital09 / scenario, selected)
+            manifest, output = selected / "import.json", selected / "bundle.json"
+            imported = json.loads(
+                run(
+                    str(binary),
+                    "instrument",
+                    "import",
+                    str(manifest),
+                    "--sha256",
+                    hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                    "--output",
+                    str(output),
+                    "--json",
+                    expected=0 if scenario in ("passed", "legacy") else 3,
+                )
+            )
+            inspected = json.loads(
+                run(
+                    str(binary),
+                    "instrument",
+                    "inspect",
+                    str(output),
+                    "--sha256",
+                    imported["data"]["output"]["sha256"],
+                    "--json",
+                )
+            )
+            assert inspected["ok"] and inspected["data"]["verdict_ok"] is (
+                scenario in ("passed", "legacy")
+            )
         for scenario in ("passed", "failed", "invalid", "mixed", "sds"):
             selected = work / ("waveform-" + scenario)
             shutil.copytree(examples / scenario, selected)
@@ -174,6 +207,7 @@ def main() -> None:
                 "module": str(module),
                 "schema_count": 11,
                 "instrument_cases_verified": 4,
+                "native09_digital_cases_verified": 5,
                 "waveform_cases_verified": 5,
                 "hardware_access": False,
             }

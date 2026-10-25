@@ -1,6 +1,7 @@
 # Offline instrument evidence
 
-Local 0.9.0 imports a completed lab-instruments 0.8.0 `logic junit` result.
+HIL 0.9.0 introduced saved digital evidence import; local 0.10.0 accepts
+completed lab-instruments 0.8.0 or 0.9.0 `logic junit` verification records.
 It binds the original report/spec/capture, native CLI JSON and JUnit XML into one
 self-contained HIL artifact. Acquisition, decoding and assertion recomputation
 remain in lab-instruments. This domain does not acquire a board lease, launch a
@@ -11,7 +12,12 @@ No runtime dependency or per-operation authorization is added.
 
 Use lab-instruments `logic check` and `logic junit` with explicit original inputs
 and hashes. Preserve the JSON stdout, exit code and new XML from the latter.
-Supported report producers are 0.7.0/0.8.0, with verifier 0.8.0. Exit 0 means all
+Verifier 0.8.0 supports report producers 0.7.0/0.8.0; verifier 0.9.0 supports
+0.7.0/0.8.0/0.9.0. A 0.9 producer with an older verifier is rejected. JUnit XML
+must match the actual recorded verifier version, never a rewritten version label.
+Examples in `examples/instrument-09` are actual native 0.9 synthetic outputs,
+including a 0.8 report recomputed by 0.9. These are unsigned historical records.
+Exit 0 means all
 checks passed; exit 3 means a completed failing report. Native exit 2 or an absent
 completed verification cannot be imported as a test result.
 

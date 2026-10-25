@@ -49,6 +49,18 @@ NATIVE_FLAGS = {
         "endpoint_identity_verified",
     )
 }
+VERIFIER_PRODUCERS = {
+    "0.8.0": ("0.7.0", "0.8.0"),
+    "0.9.0": ("0.7.0", "0.8.0", "0.9.0"),
+}
+
+
+def checked_verifier(report, version):
+    require(
+        type(version) is str and report["runner_version"] in VERIFIER_PRODUCERS.get(version, ()),
+        "unsupported native producer/verifier pair",
+    )
+    return version
 
 
 def canonical(value):
@@ -158,7 +170,7 @@ def native_report(report, spec, capture, blobs):
     )
     require(
         report.get("schema_version") == "lab-instruments.logic-check-report.v1"
-        and report.get("runner_version") in ("0.7.0", "0.8.0")
+        and report.get("runner_version") in ("0.7.0", "0.8.0", "0.9.0")
         and report.get("scope") == "host_only_saved_logic_evaluation"
         and report.get("complete") is True,
         "unsupported native report",
@@ -270,7 +282,8 @@ def native_report(report, spec, capture, blobs):
     same(report["status"], "passed" if report["ok"] else "failed", "native report status differs")
 
 
-def junit_bytes(report, report_sha):
+def junit_bytes(report, report_sha, verifier_version="0.8.0"):
+    checked_verifier(report, verifier_version)
     counts = {
         "tests": len(report["checks"]),
         "failures": sum(c["status"] == "failed" for c in report["checks"]),
@@ -286,7 +299,7 @@ def junit_bytes(report, report_sha):
         "spec_sha256": report["spec"]["sha256"],
         "capture_sha256": report["capture"]["sha256"],
         "producer_runner_version": report["runner_version"],
-        "verifier_version": "0.8.0",
+        "verifier_version": verifier_version,
         "evidence_origin": report["evidence_origin"],
         "scope": "host_only_saved_logic_verification",
         "report_authenticated": False,
@@ -352,6 +365,7 @@ def build(spec_blob, blobs, producer_version):
     same(spec["native_exit_code"], 0 if report["ok"] else 3, "native exit code differs")
     exact(response["data"], ("verification", "junit", "output"))
     verified = response["data"]["verification"]
+    verifier_version = checked_verifier(report, verified.get("verifier_version"))
     expected = {
         "schema_version": "lab-instruments.logic-check-verification.v1",
         "ok": True,
@@ -360,7 +374,7 @@ def build(spec_blob, blobs, producer_version):
         "scope": "host_only_saved_logic_verification",
         "report": reference(verified["report"], blobs["report"]),
         "producer_runner_version": report["runner_version"],
-        "verifier_version": "0.8.0",
+        "verifier_version": verifier_version,
         "verdict": {k: report[k] for k in ("ok", "status", "summary")},
         "checks": [{k: c[k] for k in ("id", "kind", "status")} for c in report["checks"]],
         "evidence_origin": report["evidence_origin"],
@@ -376,7 +390,7 @@ def build(spec_blob, blobs, producer_version):
             "path_label_differs": report[role]["path"] != supplied["path"],
         }
     same(verified, expected, "native verification record differs")
-    expected_xml, counts = junit_bytes(report, blobs["report"]["sha256"])
+    expected_xml, counts = junit_bytes(report, blobs["report"]["sha256"], verifier_version)
     same(response["data"]["junit"], counts, "native JUnit counts differ")
     reference(response["data"]["output"], blobs["junit"])
     require(

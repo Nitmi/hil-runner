@@ -9,3 +9,4 @@
 *.x text eol=lf
 examples/waveform/** -text -diff
 examples/waveform/README.md text eol=lf diff
+examples/instrument-09/** -text -diff

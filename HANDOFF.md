@@ -58,7 +58,7 @@ No publication or station activation is implied by a local candidate.
   Each selected file is read once; use bounded aggregate checks before decoding.
 - Existing digital instrument artifacts from 0.9.0 remain accepted. Their new
   HIL producer may be 0.10.0; unknown-producer negative tests must use 99.0.0.
-  Keep their pinned native 0.8 logic verifier separate from waveform 0.9.
+  Keep the native digital verification schema separate from waveform 0.9.
 - New synthetic SDS originals increase source inventory: release parsing caps
   sdist at 512 files while retaining 8 MiB total/per-file archive bounds. New
   waveform runtime and both schemas are mandatory in release verification.
@@ -73,3 +73,20 @@ No publication or station activation is implied by a local candidate.
   JSON/SCPI/CSV must survive Git and source archives unchanged. Schemas and docs
   use LF. A clean Git status alone does not prove worktree bytes equal blobs;
   source-bound release construction must compare every archived tracked file.
+
+## Release-preparation digital compatibility correction
+
+Before publishing local 0.10.0, the actual lab 0.9 installed digital chain was
+reproduced failing with `unsupported native report`. A waveform-only cold test
+had missed that the new lab generates 0.9 logic reports too. Digital import now
+explicitly supports verifier 0.8 -> producers 0.7/0.8 and verifier 0.9 -> producers
+0.7/0.8/0.9. Never accept producer0.9/verifier0.8 or an unknown verifier. Canonical
+JUnit properties use the recorded, checked verifier, with the full byte/details
+comparison retained. No decoder, hardware, authorization or XML check was removed.
+
+Native fixtures in examples/instrument-09 contain actual installed lab0.9
+passed/failed/invalid/mixed output plus an unchanged producer0.8 report reverified
+by lab0.9. Preserve them as bytes via local attributes. Installed smoke tests all
+five alongside old native0.8 and waveform cases. New release plans must use the
+replacement candidate commit/assets; the earlier d25b747c candidate stays frozen.
+Version0.10 is still unpublished, so no existing tag or release is modified.
