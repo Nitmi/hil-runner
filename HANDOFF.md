@@ -69,3 +69,7 @@ No publication or station activation is implied by a local candidate.
   Do not edit a system environment or fall back to live hardware.
 - Measure full import and whole-bundle views, including SDS many-file costs.
   A passing-only/empty view still validates all evidence; allocations are not RSS.
+- Hash-bound waveform fixtures use `-text` in .gitattributes. Native CRLF in
+  JSON/SCPI/CSV must survive Git and source archives unchanged. Schemas and docs
+  use LF. A clean Git status alone does not prove worktree bytes equal blobs;
+  source-bound release construction must compare every archived tracked file.
