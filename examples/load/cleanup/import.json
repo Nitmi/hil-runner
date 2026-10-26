@@ -1,0 +1,34 @@
+{
+  "schema_version": "embedded-hil-runner.load-spec.v1",
+  "native_exit_code": 3,
+  "inputs": {
+    "report": {
+      "path": "report.json",
+      "sha256": "a796545cd4cb30640a0fdd785dff4f0031d1470c59b222921ab9020c2421c31f"
+    },
+    "spec": {
+      "path": "spec.json",
+      "sha256": "12bba6f9671762fb8ab6df05dafdf3175da4d4103db26143478177251f66077a"
+    },
+    "capture": {
+      "path": "capture.json",
+      "sha256": "2b878833ce1502b082cfcdbc37494df8214f8595a898e32df4c4b6733c2c7d62"
+    },
+    "native_result": {
+      "path": "native_result.json",
+      "sha256": "3c9a55b4adaa7222fb72aa71fbc04647dcbcd8b31d347f912ab31460cd7b26b2"
+    },
+    "junit": {
+      "path": "junit.xml",
+      "sha256": "89830a5f54954bd99eeeacc3045f56eb438d5c8c0d19e2e338d6b95221829fa1"
+    },
+    "plan": {
+      "path": "plan.json",
+      "sha256": "a16bdb7a7ed79309979258b98584d59e8850989a95b34dbba0f73d8b4cb196a4"
+    },
+    "transcript": {
+      "path": "transcript.jsonl",
+      "sha256": "309754766946a0192c2d963a0e925412b59f45c873feb8005f3fe65709a3ff14"
+    }
+  }
+}

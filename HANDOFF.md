@@ -3,6 +3,24 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local work is 0.11.0 on feat/offline-load-evidence; 0.10.0 was already
+published, so older unpublished notes below are historical. Read docs/load.md.
+The new load domain preserves seven explicit native inputs and complete failed
+source/cleanup context. It never executes lab, hardware or a SCPI replay. Its
+consistency kernel is vendored byte-identically in Trace; synchronize changes,
+keep independent stdlib runtimes, and verify both installed wheels.
+
+New pitfalls: raw query cache keys include the expected command; transaction
+indices must match the transcript command-start index, not just a valid range.
+Number bounds precede float finiteness checks to reject enormous integers without
+overflow. Keep global Markdown verdict/JUnit outside truncated source previews.
+Preserve native fixtures with -text; stage before sdist and compare Git bytes.
+Load source files are eight bounded reads including the manifest, at most
+4,440,064 bytes; 16 MiB bundle/JSON32. Trace must validate all evidence before
+filters; neither a passing page nor an unknown cleanup may upgrade the source.
+Use real installed lab 0.10 digital/waveform outputs for combination checks;
+accepting only the new load format would strand older command domains.
+
 The local 0.9.0 instrument domain imports recorded lab-instruments 0.8.0 native
 verification/JUnit and explicit original inputs. It has no executor, device path
 or runtime dependency. `native_recomputed_now=false`: consistency checking is

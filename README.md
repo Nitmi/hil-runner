@@ -1,6 +1,11 @@
 # HIL Runner
 
-Local **0.10.0** adds [saved analog waveform import](docs/waveform.md) for
+Local **0.11.0** adds [saved load evidence import](docs/load.md) for
+lab-instruments 0.10.0 SDL1020X-E measurement assertions, including raw query
+bytes, failed sources and unknown cleanup. It also accepts actual lab 0.10
+digital/waveform verification without changing their evidence formats.
+
+The **0.10.0** release adds [saved analog waveform import](docs/waveform.md) for
 lab-instruments 0.9.0 AD3 and SDS804X checks, preserving original bytes,
 voltage metrics, failed/invalid verdicts and recorded JUnit verification.
 

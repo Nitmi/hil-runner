@@ -2,29 +2,177 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:embedded-hil-runner:managed-plan:v1",
   "title": "HIL Runner compiled managed plan",
-  "type": "object", "additionalProperties": false,
-  "required": ["schema_version", "runner_version", "inputs", "ownership", "components", "native_scope", "native_confirm_digest", "runtime_template", "limits", "authorization_granted", "execution_platform", "effects"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "runner_version",
+    "inputs",
+    "ownership",
+    "components",
+    "native_scope",
+    "native_confirm_digest",
+    "runtime_template",
+    "limits",
+    "authorization_granted",
+    "execution_platform",
+    "effects"
+  ],
   "properties": {
-    "schema_version": {"const": "embedded-hil-runner.managed-plan.v1"},
-    "runner_version": {"enum": ["0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0"]},
+    "schema_version": {
+      "const": "embedded-hil-runner.managed-plan.v1"
+    },
+    "runner_version": {
+      "enum": [
+        "0.2.0",
+        "0.3.0",
+        "0.4.0",
+        "0.5.0",
+        "0.6.0",
+        "0.7.0",
+        "0.8.0",
+        "0.9.0",
+        "0.10.0",
+        "0.11.0"
+      ]
+    },
     "inputs": {
-      "type": "object", "additionalProperties": false,
-      "required": ["spec", "selection", "component_lock", "native_scope", "runtime_template"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spec",
+        "selection",
+        "component_lock",
+        "native_scope",
+        "runtime_template"
+      ],
       "properties": {
-        "spec": {"$ref": "#/$defs/file"}, "selection": {"$ref": "#/$defs/file"},
-        "component_lock": {"$ref": "#/$defs/file"}, "native_scope": {"$ref": "#/$defs/file"},
-        "runtime_template": {"$ref": "#/$defs/file"}, "replay_fixture": {"$ref": "#/$defs/file"}
+        "spec": {
+          "$ref": "#/$defs/file"
+        },
+        "selection": {
+          "$ref": "#/$defs/file"
+        },
+        "component_lock": {
+          "$ref": "#/$defs/file"
+        },
+        "native_scope": {
+          "$ref": "#/$defs/file"
+        },
+        "runtime_template": {
+          "$ref": "#/$defs/file"
+        },
+        "replay_fixture": {
+          "$ref": "#/$defs/file"
+        }
       }
     },
-    "ownership": {"type": "object", "required": ["resources", "lease_root", "selection"]},
-    "components": {"type": "object", "required": ["baud", "blea", "embedded-debugger"], "additionalProperties": {"type": "object", "required": ["path", "version", "sha256"]}},
-    "native_scope": {"type": "object", "required": ["schema_version", "executor_sha256", "scope_path", "backend", "probe", "target", "firmware_directory", "firmware_format", "max_flashes", "duration_seconds", "expires_at"], "properties": {"schema_version": {"const": "embedded-debugger.flash-session.v1"}, "backend": {"enum": ["probe-rs", "replay"]}, "firmware_format": {"enum": ["bin", "hex"]}}},
-    "native_confirm_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "runtime_template": {"type": "object", "required": ["schema_version", "debug", "serial", "cleanup"]},
-    "limits": {"type": "object"},
-    "authorization_granted": {"const": false},
-    "execution_platform": {"const": "windows"},
-    "effects": {"const": ["native_bounded_flash", "native_runtime_reset_capture_per_build", "zero_transmit_serial_observation", "host_process_tree_management"]}
+    "ownership": {
+      "type": "object",
+      "required": [
+        "resources",
+        "lease_root",
+        "selection"
+      ]
+    },
+    "components": {
+      "type": "object",
+      "required": [
+        "baud",
+        "blea",
+        "embedded-debugger"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path",
+          "version",
+          "sha256"
+        ]
+      }
+    },
+    "native_scope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "executor_sha256",
+        "scope_path",
+        "backend",
+        "probe",
+        "target",
+        "firmware_directory",
+        "firmware_format",
+        "max_flashes",
+        "duration_seconds",
+        "expires_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "embedded-debugger.flash-session.v1"
+        },
+        "backend": {
+          "enum": [
+            "probe-rs",
+            "replay"
+          ]
+        },
+        "firmware_format": {
+          "enum": [
+            "bin",
+            "hex"
+          ]
+        }
+      }
+    },
+    "native_confirm_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "runtime_template": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "debug",
+        "serial",
+        "cleanup"
+      ]
+    },
+    "limits": {
+      "type": "object"
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "execution_platform": {
+      "const": "windows"
+    },
+    "effects": {
+      "const": [
+        "native_bounded_flash",
+        "native_runtime_reset_capture_per_build",
+        "zero_transmit_serial_observation",
+        "host_process_tree_management"
+      ]
+    }
   },
-  "$defs": {"file": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}}
+  "$defs": {
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
 }

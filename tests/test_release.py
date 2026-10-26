@@ -41,6 +41,17 @@ def archives(directory, *, wheel_mutation=None, source_mutation=None, version=VE
             source[("" if name.startswith("schemas/") else "src/hil_runner/") + name] = wheel[
                 "hil_runner/" + name
             ]
+    if tuple(map(int, version.split("."))) >= (0, 11, 0):
+        for name in (
+            "load.py",
+            "load_protocol.py",
+            "schemas/load-spec.schema.json",
+            "schemas/load-report.schema.json",
+        ):
+            wheel["hil_runner/" + name] = b"# fixture\n" if name.endswith(".py") else b"{}\n"
+            source[("" if name.startswith("schemas/") else "src/hil_runner/") + name] = wheel[
+                "hil_runner/" + name
+            ]
     if wheel_mutation:
         wheel_mutation(wheel)
     if source_mutation:

@@ -1,0 +1,1 @@
+{"schema_version": "lab-instruments.load-check-spec.v1", "checks": [{"id": "rail", "phase": "loaded", "window": {"start": 0, "end_exclusive": 2}, "expect": {"mean_voltage_v": {"minimum": 5, "maximum": 5.01}, "input_on": true}}]}

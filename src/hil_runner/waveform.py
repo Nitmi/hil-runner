@@ -177,7 +177,7 @@ def validate_report(report, contract, blobs, sources, raw_sources):
     )
     require(
         report["schema_version"] == "lab-instruments.waveform-check-report.v1"
-        and report["runner_version"] == "0.9.0"
+        and report["runner_version"] in ("0.9.0", "0.10.0")
         and report["complete"] is True
         and report["scope"] == "host_only_saved_waveform_evaluation",
         "unsupported native report",
@@ -454,7 +454,7 @@ def junit_bytes(report, sha):
 
 
 def build(manifest_blob, blobs, sources, version):
-    require(version == "0.10.0", "unsupported HIL waveform producer")
+    require(version in ("0.10.0", "0.11.0"), "unsupported HIL waveform producer")
     manifest = decode(unpack(manifest_blob, MAX_SPEC))
     validate_manifest(manifest)
     exact(blobs, LIMITS)
@@ -506,6 +506,13 @@ def build(manifest_blob, blobs, sources, version):
     same(manifest["native_exit_code"], 0 if report["ok"] else 3)
     exact(response["data"], ("verification", "junit", "output"))
     verified = response["data"]["verification"]
+    verifier_version = verified.get("verifier_version")
+    require(
+        verifier_version == "0.10.0"
+        or verifier_version == "0.9.0"
+        and report["runner_version"] == "0.9.0",
+        "unsupported native waveform producer/verifier pair",
+    )
     bindings = {}
     for role in ("spec", "capture"):
         supplied = reference(verified["bindings"][role]["supplied"], blobs[role])
@@ -522,8 +529,8 @@ def build(manifest_blob, blobs, sources, version):
             "status": "verified",
             "report": reference(verified["report"], blobs["report"]),
             "bindings": bindings,
-            "producer_runner_version": "0.9.0",
-            "verifier_version": "0.9.0",
+            "producer_runner_version": report["runner_version"],
+            "verifier_version": verifier_version,
             "verdict": {k: report[k] for k in ("ok", "status", "summary")},
             "scope": "host_only_saved_waveform_verification",
             **NATIVE_FLAGS,

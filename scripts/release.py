@@ -114,6 +114,19 @@ def payloads(directory: Path, version: str, snapshots: dict | None = None) -> tu
             ),
             "Missing waveform runtime files",
         )
+    if tuple(map(int, version.split("."))) >= (0, 11, 0):
+        require(
+            all(
+                "hil_runner/" + name in wheel
+                for name in (
+                    "load.py",
+                    "load_protocol.py",
+                    "schemas/load-spec.schema.json",
+                    "schemas/load-report.schema.json",
+                )
+            ),
+            "Missing load runtime files",
+        )
     source = {}
     prefix = f"embedded_hil_runner-{version}/"
     total = 0

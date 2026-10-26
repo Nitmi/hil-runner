@@ -34,6 +34,8 @@ def main() -> None:
         "instrument-report",
         "waveform-spec",
         "waveform-report",
+        "load-spec",
+        "load-report",
     ):
         resource = importlib.resources.files("hil_runner") / "schemas" / f"{name}.schema.json"
         assert json.loads(resource.read_bytes())["$schema"]
@@ -199,16 +201,58 @@ def main() -> None:
                 and inspected["data"]["verdict_ok"] is imported["data"]["verdict_ok"]
             )
             assert not inspected["data"]["native_recomputed_now"]
+        for domain, directory, scenarios in (
+            ("load", "load", ("passed", "failed", "invalid", "mixed", "cleanup", "timeout")),
+            ("instrument", "instrument-10", ("passed", "failed", "invalid", "mixed", "legacy")),
+            ("waveform", "waveform-10", ("passed", "failed", "invalid")),
+        ):
+            for scenario in scenarios:
+                selected = work / (directory + "-" + scenario)
+                shutil.copytree(
+                    Path(__file__).resolve().parents[1] / "examples" / directory / scenario,
+                    selected,
+                )
+                manifest, output = selected / "import.json", selected / "bundle.json"
+                passed = scenario in ("passed", "legacy")
+                imported = json.loads(
+                    run(
+                        str(binary),
+                        domain,
+                        "import",
+                        str(manifest),
+                        "--sha256",
+                        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                        "--output",
+                        str(output),
+                        "--json",
+                        expected=0 if passed else 3,
+                    )
+                )
+                inspected = json.loads(
+                    run(
+                        str(binary),
+                        domain,
+                        "inspect",
+                        str(output),
+                        "--sha256",
+                        imported["data"]["output"]["sha256"],
+                        "--json",
+                    )
+                )
+                assert inspected["ok"] and inspected["data"]["verdict_ok"] is passed
+                assert not inspected["data"]["native_recomputed_now"]
     print(
         json.dumps(
             {
                 "ok": True,
                 "version": version,
                 "module": str(module),
-                "schema_count": 11,
+                "schema_count": 13,
                 "instrument_cases_verified": 4,
                 "native09_digital_cases_verified": 5,
                 "waveform_cases_verified": 5,
+                "load_cases_verified": 6,
+                "native10_compatibility_cases_verified": 8,
                 "hardware_access": False,
             }
         )

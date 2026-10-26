@@ -52,6 +52,7 @@ NATIVE_FLAGS = {
 VERIFIER_PRODUCERS = {
     "0.8.0": ("0.7.0", "0.8.0"),
     "0.9.0": ("0.7.0", "0.8.0", "0.9.0"),
+    "0.10.0": ("0.7.0", "0.8.0", "0.9.0", "0.10.0"),
 }
 
 
@@ -170,7 +171,7 @@ def native_report(report, spec, capture, blobs):
     )
     require(
         report.get("schema_version") == "lab-instruments.logic-check-report.v1"
-        and report.get("runner_version") in ("0.7.0", "0.8.0", "0.9.0")
+        and report.get("runner_version") in ("0.7.0", "0.8.0", "0.9.0", "0.10.0")
         and report.get("scope") == "host_only_saved_logic_evaluation"
         and report.get("complete") is True,
         "unsupported native report",
@@ -336,7 +337,9 @@ def junit_bytes(report, report_sha, verifier_version="0.8.0"):
 
 
 def build(spec_blob, blobs, producer_version):
-    require(producer_version in ("0.9.0", "0.10.0"), "unsupported HIL instrument producer")
+    require(
+        producer_version in ("0.9.0", "0.10.0", "0.11.0"), "unsupported HIL instrument producer"
+    )
     spec = decode(unpack(spec_blob, 16384))
     validate_spec(spec)
     exact(blobs, LIMITS)

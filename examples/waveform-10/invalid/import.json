@@ -1,0 +1,27 @@
+{
+  "schema_version": "embedded-hil-runner.waveform-spec.v1",
+  "native_exit_code": 3,
+  "inputs": {
+    "report": {
+      "path": "report.json",
+      "sha256": "c85085033169f55a9686b44280339824e10fbb98e58ddde87f2d2dc744b50991"
+    },
+    "spec": {
+      "path": "spec.json",
+      "sha256": "280425716054dac3dc15582e69fe97237c4a8baf0bd893a141b5d65de510c9de"
+    },
+    "capture": {
+      "path": "capture.json",
+      "sha256": "e6617918a971a9e2289a73ee9825c950fa08045cfed14938a5dd8ed6dad3a300"
+    },
+    "native_result": {
+      "path": "native_result.json",
+      "sha256": "edda9177d4853feb482d9059f9383c8efa84868f00fda9130087997de97e77ca"
+    },
+    "junit": {
+      "path": "junit.xml",
+      "sha256": "d0195ee02dc50b57aa9c27f7b66581be748e8a30a8afe2781be1873c7918c305"
+    }
+  },
+  "source_files": []
+}

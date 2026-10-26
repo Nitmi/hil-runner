@@ -1,0 +1,26 @@
+{
+  "schema_version": "embedded-hil-runner.instrument-spec.v1",
+  "native_exit_code": 3,
+  "inputs": {
+    "report": {
+      "path": "report.json",
+      "sha256": "d5a29f7451ae33e1ab67625ad5ecb65bc854022fda11766f75dc199ac17ab6ca"
+    },
+    "spec": {
+      "path": "spec.json",
+      "sha256": "5c2c6a368d54fb0c06a793a34406c1ee14b44cece8c21f778d5a933358d69e0d"
+    },
+    "capture": {
+      "path": "capture.json",
+      "sha256": "7b53d0507a1588d6521a98b36e5df77b00db998a8431a1d12f91a04e733112e3"
+    },
+    "native_result": {
+      "path": "native_result.json",
+      "sha256": "475bb8b7c76a872066838ad16836d101ccadffad9abaca8d53259d8d660d4914"
+    },
+    "junit": {
+      "path": "junit.xml",
+      "sha256": "49950712576c0e96d8a3aee5f62a43ec2f2759110a1cee847ca8127abfeb67ae"
+    }
+  }
+}
