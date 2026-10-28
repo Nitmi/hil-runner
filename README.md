@@ -1,6 +1,10 @@
 # HIL Runner
 
-Local **0.11.0** adds [saved load evidence import](docs/load.md) for
+Local **0.12.0** adds [saved thermal evidence import](docs/thermal.md): original
+frames, radiometry/telemetry, ROI assertions and native JUnit verification, with
+failed/invalid verdicts and unknown cleanup preserved. No camera or helper opens.
+
+Version **0.11.0** adds [saved load evidence import](docs/load.md) for
 lab-instruments 0.10.0 SDL1020X-E measurement assertions, including raw query
 bytes, failed sources and unknown cleanup. It also accepts actual lab 0.10
 digital/waveform verification without changing their evidence formats.

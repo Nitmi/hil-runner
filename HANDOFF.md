@@ -3,9 +3,61 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
-Current local work is 0.11.0 on feat/offline-load-evidence; 0.10.0 was already
-published, so older unpublished notes below are historical. Read docs/load.md.
-The new load domain preserves seven explicit native inputs and complete failed
+Published 0.11.0 is28bd2275. Current local0.12.0 is on
+feat/offline-thermal-evidence; older unpublished notes below are historical.
+Read docs/thermal.md before thermal import changes.
+
+- Independent thermal import/inspect binds five primary native inputs plus the
+  complete ordered original source inventory (including empty ancillary files).
+  It performs no camera/helper/SDK access or temperature conversion. The shared
+  stdlib thermal_protocol.py and load_protocol.py must stay byte-identical in
+  Trace; neither runtime depends on the other or on lab. Trace does not rebuild
+  native XML, while HIL import/inspect compare canonical native JUnit bytes.
+- Preserve source failure, unscored partial frame rows, native errors and unknown
+  cleanup. A passing/empty Trace page never alters global failure/JUnit counts.
+  Raw Y16/control/telemetry, mask/FFC/gain/trend context and ROI spans remain bound.
+  All actual-device/scene/calibration/accuracy/clock/junction claims stay false.
+  Native verification is historical/unsigned; input hashes do not authenticate it.
+- Native fsum/division can place a mean one adjacent binary float outside equal
+  min/max. Only this recorded-statistic consistency relation permits one ULP;
+  user temperature bounds/comparisons never widen. Actual400-pixel native frames
+  exposed this; do not add a broad epsilon or change native measurement output.
+- Never save a thermal bundle inside its selected source capture directory: that
+  would add an uninventoried file. Reject it before reading remaining inputs.
+  Reject duplicate file identities/paths, links, missing/extra source artifacts,
+  version/verifier mismatches and coherently rebound inconsistent records.
+- 0.12 retains old digital/waveform/load artifacts and also handles lab0.11
+  verification matrices. Joint wheel acceptance used26 cases per Python:
+  eleven thermal, fourteen actual historical cases rechecked by native0.11
+  (legacy producer0.8 unchanged), plus current native0.11 SDS many-file output.
+  Each retained global verdict survived HIL import/inspect and four Trace views.
+- Python3.11/3.13 full regression each383 passed/one symlink skip, with all seven
+  exact-hash native Replay cases enabled. Final thermal/release focused tests use
+  the bare pytest launcher too (54 passed each). No real board/SDK/simulator used.
+  Independent HIL cold smoke checks15 schemas/eleven thermal cases; Trace checks
+  138 commands/24 package files. Qualified cold installs are distinct from one
+  interrupted first Trace3.11 cold run retained in the execution directory.
+- One outer600-second cold-smoke timeout occurred in existing digital reporting;
+  exact host cause is unconfirmed. No owned process remained; one diagnostic of
+  that installed report completed in0.357s. A new isolated cold run fully passed.
+  Keep the first failed directory; do not raise product timeouts or call it pass.
+  Joint harness initially assumed selected_checks for every domain; digital uses
+  selected_count. Reuse only recorded matching argv/exit/output hashes when
+  resuming completed offline checks, never fabricate exit codes or rerun hardware.
+- Helpers initially confused runner_version vs producer_version in old schemas,
+  a relative test-module import, and function-local importlib shadowing the outer
+  import. Fix those authoring errors, not runtime gates or input evidence. The
+  final code and native source fixtures passed all relevant checks.
+- Local performance on installedPy3.13 (one warmup/seven samples):3 buffers/two
+  checks,2,174,853B bundle: import63.61ms, inspect43.39ms, Trace passing/empty43.35/
+  44.22ms;8 buffers/eight checks,5,723,556B:121.92/106.78/103.20/103.55ms. Import
+  Python peaks6.61/17.36MB; whole-bundle reads peak33.56MB due to the bounded
+  read(maximum+1) buffer even for small files. Not RSS/cold-I/O/startup/SLA.
+  Network/process starts were blocked during measurement. Fixture source cap16MiB,
+  bundle32MiB,101 original files/106 selected reads; full validation precedes pages.
+  Execution evidence: D:\Code\tmp\hil-trace-thermal-0120-20261028.
+
+The published0.11 load domain preserves seven explicit native inputs and complete failed
 source/cleanup context. It never executes lab, hardware or a SCPI replay. Its
 consistency kernel is vendored byte-identically in Trace; synchronize changes,
 keep independent stdlib runtimes, and verify both installed wheels.

@@ -16,7 +16,7 @@ FLAGS = protocol.FLAGS
 canonical = protocol.canonical
 
 
-def junit_bytes(report, sha):
+def junit_bytes(report, sha, verifier="0.10.0"):
     counts = dict(
         tests=len(report["checks"]),
         failures=report["summary"]["failed"],
@@ -34,7 +34,7 @@ def junit_bytes(report, sha):
             "capture_sha256": report["capture"]["sha256"],
             "spec_sha256": report["spec"]["sha256"],
             "producer_runner_version": report["runner_version"],
-            "verifier_version": "0.10.0",
+            "verifier_version": verifier,
             "time_semantics": protocol.TIME,
             "source_status": report["source"]["source_status"],
             "evidence_origin": report["source"]["evidence_origin"],
@@ -59,7 +59,14 @@ def build(manifest_blob, blobs, version):
     report = protocol.decode(protocol.unpack(blobs["report"], protocol.LIMITS["report"]))
     xml = protocol.unpack(blobs["junit"], protocol.LIMITS["junit"])
     protocol.require(
-        xml == junit_bytes(report, blobs["report"]["sha256"]),
+        xml
+        == junit_bytes(
+            report,
+            blobs["report"]["sha256"],
+            protocol.decode(
+                protocol.unpack(blobs["native_result"], protocol.LIMITS["native_result"])
+            )["data"]["verification"]["verifier_version"],
+        ),
         "native load JUnit bytes differ",
         "EVIDENCE_MISMATCH",
     )

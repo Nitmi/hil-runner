@@ -127,6 +127,19 @@ def payloads(directory: Path, version: str, snapshots: dict | None = None) -> tu
             ),
             "Missing load runtime files",
         )
+    if tuple(map(int, version.split("."))) >= (0, 12, 0):
+        require(
+            all(
+                "hil_runner/" + name in wheel
+                for name in (
+                    "thermal.py",
+                    "thermal_protocol.py",
+                    "schemas/thermal-spec.schema.json",
+                    "schemas/thermal-report.schema.json",
+                )
+            ),
+            "Missing thermal runtime files",
+        )
     source = {}
     prefix = f"embedded_hil_runner-{version}/"
     total = 0

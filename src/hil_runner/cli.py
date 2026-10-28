@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from . import __version__, instrument, simulation, waveform
+from . import __version__, instrument, simulation, thermal, waveform
 from . import load as load_evidence
 from .common import HilError, report
 from .lease import Lease, bounds
@@ -29,7 +29,7 @@ def parser() -> argparse.ArgumentParser:
     )
     root.add_argument("--version", action="version", version=f"hil-runner {__version__}")
     domains = root.add_subparsers(dest="domain", required=True)
-    for domain in ("instrument", "waveform", "load"):
+    for domain in ("instrument", "waveform", "load", "thermal"):
         instruments = domains.add_parser(domain, help="offline recorded native verification")
         imports = instruments.add_subparsers(dest="operation", required=True)
         for operation in ("import", "inspect"):
@@ -85,10 +85,13 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    if args.domain in ("instrument", "waveform", "load"):
-        evidence = {"instrument": instrument, "waveform": waveform, "load": load_evidence}[
-            args.domain
-        ]
+    if args.domain in ("instrument", "waveform", "load", "thermal"):
+        evidence = {
+            "instrument": instrument,
+            "waveform": waveform,
+            "load": load_evidence,
+            "thermal": thermal,
+        }[args.domain]
         try:
             if args.operation == "import":
                 value, ref = evidence.import_evidence(args.input, args.sha256, args.output)

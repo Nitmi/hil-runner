@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import importlib.resources
+import importlib.util
 import json
 import os
 import shutil
@@ -36,6 +37,8 @@ def main() -> None:
         "waveform-report",
         "load-spec",
         "load-report",
+        "thermal-spec",
+        "thermal-report",
     ):
         resource = importlib.resources.files("hil_runner") / "schemas" / f"{name}.schema.json"
         assert json.loads(resource.read_bytes())["$schema"]
@@ -241,13 +244,20 @@ def main() -> None:
                 )
                 assert inspected["ok"] and inspected["data"]["verdict_ok"] is passed
                 assert not inspected["data"]["native_recomputed_now"]
+        spec = importlib.util.spec_from_file_location(
+            "thermal_smoke", Path(__file__).with_name("thermal_smoke.py")
+        )
+        thermal_smoke = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(thermal_smoke)
+        thermal_cases = thermal_smoke.verify(run, binary, work / "thermal")
     print(
         json.dumps(
             {
                 "ok": True,
                 "version": version,
                 "module": str(module),
-                "schema_count": 13,
+                "schema_count": 15,
+                "thermal_cases_verified": len(thermal_cases),
                 "instrument_cases_verified": 4,
                 "native09_digital_cases_verified": 5,
                 "waveform_cases_verified": 5,
