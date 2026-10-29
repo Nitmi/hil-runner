@@ -603,3 +603,28 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
     (output / "plan.json").write_bytes(b"changed")
     with pytest.raises(HilError):
         sim.inspect_report(saved, digest(saved.read_bytes()))
+
+
+@pytest.mark.parametrize("version", sim.INVENTORIES)
+def test_sensor_plan_requires_080_exact_wheel(inputs, version):
+    flash_inputs(inputs, version=version, gpio=True)
+    spec = json.loads(inputs.read_bytes())
+    path = Path(spec["cases"][0]["plan"]["path"])
+    native = json.loads(path.read_bytes())
+    native.update(schema_version="embedded-sim-runner.sensor-plan.v1", profile=sim.SENSOR_PROFILE)
+    path.write_text(json.dumps(native))
+    for case in spec["cases"]:
+        case["plan"]["sha256"] = digest(path.read_bytes())
+    inputs.write_text(json.dumps(spec))
+    if version != "0.8.0":
+        with pytest.raises(HilError, match="sensor plans require"):
+            sim.compile_plan(inputs)
+    else:
+        plan = sim.compile_plan(inputs)
+        assert len(plan["package_files"]) == 26
+        jsonschema.validate(
+            plan,
+            json.loads(
+                (Path(__file__).parents[1] / "schemas/simulation-plan.schema.json").read_bytes()
+            ),
+        )

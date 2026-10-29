@@ -100,7 +100,8 @@ changed model-limit summaries. Inspect success establishes saved consistency,
 not CPU execution, report authenticity or physical coverage.
 
 The wheel is never imported in HIL's process or installed into system Python.
-Its version-specific 13 (0.2.0), 16 (0.3.0), 18 (0.4.0), 20 (0.5.0) or 21 (0.6.0) audited package filenames are checked, hash-bound and staged into a private
+Its version-specific 13 (0.2.0), 16 (0.3.0), 18 (0.4.0), 20 (0.5.0), 21 (0.6.0),
+24 (0.7.0) or 26 (0.8.0) audited package filenames are checked, hash-bound and staged into a private
 directory; unexpected packages, paths, links or runtime dependencies are rejected.
 The fixed child command is isolated Python `-I -S -B`, loading only this staged
 package ahead of the interpreter's standard library. No PYTHONPATH, user/site
@@ -162,3 +163,35 @@ passes can continue without another approval; a failure still stops the suite.
 Parent timeouts retain S3 ROM, private Flash/eFuse and partial logs when present,
 without inventing a native report or Trace source. Trace 0.6.0 keeps identity,
 clock/core declarations and model limits visible even in filtered queries.
+
+## Sensor evidence
+
+HIL 0.13 selects only the exact 26-file sim-runner 0.8.0 wheel for native
+`embedded-sim-runner.sensor-plan.v1`, profile `nrf52840-i2c-sensor-v1`.
+Earlier supported profiles remain usable with their versioned inventories.
+Prepare the native plan first, then use the same hash-bound suite commands above.
+No new hardware permission or per-case approval is introduced.
+
+The fixed scenario uses Renode TWI0, TMP103 register 0 at address 0x48 and a
+guest TIMER0 IRQ. Native plans request 82 virtual milliseconds, including four
+paused model observations. HIL retains complete `sensor_evidence`, signed-byte
+samples, fault request (`none`, `temperature-stuck`, `temperature-offset`),
+effect/nominal outcomes, native errors and clock declarations. Unevaluated
+assertions remain null. Observing an injected effect does not turn a failed
+nominal regression into a passing suite or allow the next case to run.
+
+Native inspect owns firmware/readiness/sensor policy. HIL checks its saved
+projection without implementing that policy again. Trace 0.13 imports the
+native reports and preserves raw model stdout spans, including negative readings,
+in full, filtered and empty views. These are model properties and guest-reported
+register bytes, not calibrated temperature or an I2C electrical measurement.
+`model_coverage_complete`, `physical_timing_verified`, `sensor_accuracy_verified`
+and `i2c_electrical_behavior_verified` remain false. Requested virtual boundaries,
+guest 250 kHz captures and host UART windows remain distinct.
+
+Limits remain eight cases, 1..600 seconds per child call, 16 samples and four
+model observations per sensor report. Offline inspection hashes all artifacts
+before validating summaries; page size does not reduce verification cost.
+`scripts/accept_sensor_simulation.py` is a development-only installed-wheel
+acceptance harness, with sequential successes, faults, timeout, mixed profiles,
+preflight rejection and coherently rehashed summary-tamper checks.

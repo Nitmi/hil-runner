@@ -3,6 +3,45 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.13 on feat/sensor-simulation-evidence adds explicit sim-runner0.8
+sensor plan/report integration. The0.12 notes below are historical; it is already
+published. Read docs/simulation.md#sensor-evidence for the new local candidate.
+
+- Exact0.8 inventory is26 files, including sensor.py and TMP103 model; retain all
+  older wheel/profile inventories. Native run/inspect owns acceptance policy.
+  HIL copies bounded native assertions, errors, fault request and clock without
+  reevaluating temperature/readiness. Fail/unknown still stops subsequent cases.
+- Py3.11/3.13 each400 passed/one symlink skip, seven exact native Replay tests
+  enabled; bare-pytest sensor/release22 passed each. Shared load/thermal protocol
+  bytes stay identical with Trace. Extend explicit producer schemas/lists to0.13
+  while keeping old pairs; the new version must not break old instrument bundles.
+- Both installed-wheel smokes pass15 schemas and old instrument/waveform/load/
+  thermal checks; Trace cold smoke138 CLI/24 package files. Each pair independently
+  matches65 non-RECORD payload files to selected wheels. Two seven-suite matrices
+  contain18 actual native simulation attempts in total, zero retries: normal pair,
+  frozen/offset/wrong BUILD/timeout fail-stop, sensor+GPIO+WASM qualified success,
+  and preflight rejection before any backend. Four normal UARTs match the accepted
+  native0.8 fixture. Fourteen sensor sources retain48 exact stdout spans/nulls.
+- Development wrapper faults: direct -I Trace helper needs its trusted neighboring
+  script directory; HIL and Trace inspect need distinct capture names; capture
+  outcome lives in capture_outcomes, not simulation_sources. A valid timeout may
+  have no uart.bin: preserve no bytes/null assertions, never invent a file/pass.
+  The harness snapshots journals and reuses only matching completed argv/actual
+  exit/capture; it never retries failed/uncertain children or successful runs.
+  Original failures and resumed Py3.11 evidence remain; Py3.13 starts clean.
+- InstalledPy3.13 warm medians (one warmup/seven samples): normal two-case HIL
+  inspect215.23ms, Trace import30.04ms, inspect/sample/empty19.28/18.51/19.89ms;
+  frozen HIL196.37ms/import18.86ms, timeout169.36/16.78ms. Python allocation peaks
+  HIL~17.1MB, Trace import~8.7MB, views~67.1MB from existing read(limit+1) buffer.
+  Not RSS/startup/cold-I/O/SLA; filters validate whole input first. Measurement
+  blocks subprocess/network and allows view reads of only the saved timeline.
+- Evidence root D:\Code\tmp\hil-trace-sensor-0130-20261029. Independent audit
+  verifies304 protected files unchanged, saved bytes, exact negative exits and
+  cleanup. No physical access or formal Toolkit/station/plugin/lock changes.
+  The new0.13 candidate is local, unsigned and unpublished. Next prepare the
+  sim0.8/HIL0.13/Trace0.13 publication and Toolkit integration, keeping formal
+  simulation pins unchanged until formal sources/cold installs are qualified.
+
 Published 0.11.0 is28bd2275. Current local0.12.0 is on
 feat/offline-thermal-evidence; older unpublished notes below are historical.
 Read docs/thermal.md before thermal import changes.

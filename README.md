@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.13.0** adds [sensor simulation suites](docs/simulation.md#sensor-evidence):
+select the exact sim-runner 0.8.0 wheel for fixed nRF52840 TWI0/TMP103 plans.
+Signed temperature samples, model snapshots, injected faults and unknown results
+remain native declarations; a failed case stops later builds.
+
 Local **0.12.0** adds [saved thermal evidence import](docs/thermal.md): original
 frames, radiometry/telemetry, ROI assertions and native JUnit verification, with
 failed/invalid verdicts and unknown cleanup preserved. No camera or helper opens.
