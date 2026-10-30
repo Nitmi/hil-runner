@@ -455,7 +455,8 @@ def junit_bytes(report, sha):
 
 def build(manifest_blob, blobs, sources, version):
     require(
-        version in ("0.10.0", "0.11.0", "0.12.0", "0.13.0"), "unsupported HIL waveform producer"
+        version in ("0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0"),
+        "unsupported HIL waveform producer",
     )
     manifest = decode(unpack(manifest_blob, MAX_SPEC))
     validate_manifest(manifest)

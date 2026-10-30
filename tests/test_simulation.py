@@ -606,7 +606,7 @@ def test_suite_stops_and_preserves_native_failure_and_cleanup(
 
 
 @pytest.mark.parametrize("version", sim.INVENTORIES)
-def test_sensor_plan_requires_080_exact_wheel(inputs, version):
+def test_sensor_plan_requires_080_or_090_exact_wheel(inputs, version):
     flash_inputs(inputs, version=version, gpio=True)
     spec = json.loads(inputs.read_bytes())
     path = Path(spec["cases"][0]["plan"]["path"])
@@ -616,12 +616,12 @@ def test_sensor_plan_requires_080_exact_wheel(inputs, version):
     for case in spec["cases"]:
         case["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version != "0.8.0":
+    if version not in ("0.8.0", "0.9.0"):
         with pytest.raises(HilError, match="sensor plans require"):
             sim.compile_plan(inputs)
     else:
         plan = sim.compile_plan(inputs)
-        assert len(plan["package_files"]) == 26
+        assert len(plan["package_files"]) == (26 if version == "0.8.0" else 28)
         jsonschema.validate(
             plan,
             json.loads(

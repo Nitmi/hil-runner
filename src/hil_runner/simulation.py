@@ -52,6 +52,7 @@ WASM_MODULES = FAULT_MODULES | {
     "assets/esp_wasm_runner.mjs",
 }
 SENSOR_MODULES = WASM_MODULES | {"sensor.py", "assets/nrf52840-i2c-sensor.repl"}
+SPI_MODULES = SENSOR_MODULES | {"spi_sensor.py", "assets/nrf52840-spi-sensor.repl"}
 INVENTORIES = {
     "0.2.0": MODULES,
     "0.3.0": FLASH_MODULES,
@@ -60,9 +61,13 @@ INVENTORIES = {
     "0.6.0": FAULT_MODULES,
     "0.7.0": WASM_MODULES,
     "0.8.0": SENSOR_MODULES,
+    "0.9.0": SPI_MODULES,
 }
 SENSOR_PROFILE = "nrf52840-i2c-sensor-v1"
+SPI_PROFILE = "nrf52840-spi-sensor-v1"
+SENSOR_PROFILES = (SENSOR_PROFILE, SPI_PROFILE)
 SENSOR_FAULTS = ("none", "temperature-stuck", "temperature-offset")
+SPI_FAULTS = ("none", "temperature-stuck", "frame-slip")
 SENSOR_LABELS = {
     "model_coverage_complete": False,
     "physical_timing_verified": False,
@@ -70,6 +75,16 @@ SENSOR_LABELS = {
     "i2c_electrical_behavior_verified": False,
     "sensor_observation_semantics": "paused_model_property_and_register_snapshot_not_measurement",
     "sensor_sample_semantics": "guest_TWI0_register0_signed_byte_not_calibrated_temperature",
+    "timer_observation_semantics": "guest_250kHz_TIMER0_IRQ_capture_not_host_time",
+}
+SPI_LABELS = {
+    "model_coverage_complete": False,
+    "physical_timing_verified": False,
+    "sensor_accuracy_verified": False,
+    "spi_electrical_behavior_verified": False,
+    "sensor_observation_semantics": "paused_LM74_property_SPI_enable_and_TIMER0_snapshot",
+    "sensor_sample_semantics": "guest_SPI_two_byte_word_and_signed_Q4_not_calibrated_temperature",
+    "frame_slip_semantics": "one_monitor_Transmit_consumes_model_byte_not_wire_fault",
     "timer_observation_semantics": "guest_250kHz_TIMER0_IRQ_capture_not_host_time",
 }
 GPIO_PROFILE = "nrf52840-gpio-timer-v1"
@@ -89,6 +104,7 @@ PROFILES = {
     "embedded-sim-runner.gpio-fault-plan.v1": (FAULT_PROFILE, "renode"),
     "embedded-sim-runner.esp-wasm-plan.v1": (WASM_PROFILE, "espressif-esp-emulator-wasm"),
     "embedded-sim-runner.sensor-plan.v1": (SENSOR_PROFILE, "renode"),
+    "embedded-sim-runner.spi-sensor-plan.v1": (SPI_PROFILE, "renode"),
 }
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));"
@@ -163,7 +179,7 @@ def _package(data: bytes) -> dict[str, bytes]:
             for version in INVENTORIES
             if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
         ]
-        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.8.0 wheel")
+        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.9.0 wheel")
         version = versions[0]
         modules = INVENTORIES[version]
         metadata = f"embedded_sim_runner-{version}.dist-info/"
@@ -265,32 +281,37 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 FAULT_MODULES,
                 WASM_MODULES,
                 SENSOR_MODULES,
+                SPI_MODULES,
             ),
-            "Flash plans require sim-runner 0.3.0 through 0.8.0",
+            "Flash plans require sim-runner 0.3.0 through 0.9.0",
         )
         require(
             profile[0] != GPIO_PROFILE
             or set(files)
-            in (GPIO_MODULES, S3_MODULES, FAULT_MODULES, WASM_MODULES, SENSOR_MODULES),
-            "GPIO plans require sim-runner 0.4.0 through 0.8.0",
+            in (GPIO_MODULES, S3_MODULES, FAULT_MODULES, WASM_MODULES, SENSOR_MODULES, SPI_MODULES),
+            "GPIO plans require sim-runner 0.4.0 through 0.9.0",
         )
         require(
             profile[0] != S3_PROFILE
-            or set(files) in (S3_MODULES, FAULT_MODULES, WASM_MODULES, SENSOR_MODULES),
-            "S3 plans require sim-runner 0.5.0 through 0.8.0",
+            or set(files) in (S3_MODULES, FAULT_MODULES, WASM_MODULES, SENSOR_MODULES, SPI_MODULES),
+            "S3 plans require sim-runner 0.5.0 through 0.9.0",
         )
         require(
             profile[0] != FAULT_PROFILE
-            or set(files) in (FAULT_MODULES, WASM_MODULES, SENSOR_MODULES),
-            "fault plans require sim-runner 0.6.0 through 0.8.0",
+            or set(files) in (FAULT_MODULES, WASM_MODULES, SENSOR_MODULES, SPI_MODULES),
+            "fault plans require sim-runner 0.6.0 through 0.9.0",
         )
         require(
-            profile[0] != WASM_PROFILE or set(files) in (WASM_MODULES, SENSOR_MODULES),
-            "WASM plans require sim-runner 0.7.0 or 0.8.0",
+            profile[0] != WASM_PROFILE or set(files) in (WASM_MODULES, SENSOR_MODULES, SPI_MODULES),
+            "WASM plans require sim-runner 0.7.0 through 0.9.0",
         )
         require(
-            profile[0] != SENSOR_PROFILE or set(files) == SENSOR_MODULES,
-            "sensor plans require sim-runner 0.8.0",
+            profile[0] != SENSOR_PROFILE or set(files) in (SENSOR_MODULES, SPI_MODULES),
+            "sensor plans require sim-runner 0.8.0 or 0.9.0",
+        )
+        require(
+            profile[0] != SPI_PROFILE or set(files) == SPI_MODULES,
+            "SPI sensor plans require sim-runner 0.9.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -516,7 +537,7 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 state.update(wasm_evidence(value))
             if row["profile"] in (GPIO_PROFILE, FAULT_PROFILE):
                 state.update(gpio_evidence(value))
-            if row["profile"] == SENSOR_PROFILE:
+            if row["profile"] in SENSOR_PROFILES:
                 state.update(sensor_evidence(value))
             native_files.append(report_path)
             for filename, artifact in value["artifacts"].items():
@@ -724,16 +745,24 @@ def gpio_evidence(native):
 
 def sensor_evidence(native):
     """Copy bounded native sensor declarations after native inspection, without policy replay."""
+    spi = native.get("profile") == SPI_PROFILE
+    labels = SPI_LABELS if spi else SENSOR_LABELS
     require(
-        native.get("schema_version") == "embedded-sim-runner.sensor-report.v1"
-        and native.get("profile") == SENSOR_PROFILE
-        and all(
-            type(native.get(k)) is type(v) and native[k] == v for k, v in SENSOR_LABELS.items()
-        ),
+        native.get("schema_version")
+        == (
+            "embedded-sim-runner.spi-sensor-report.v1"
+            if spi
+            else "embedded-sim-runner.sensor-report.v1"
+        )
+        and native.get("profile") in SENSOR_PROFILES
+        and all(type(native.get(k)) is type(v) and native[k] == v for k, v in labels.items()),
         "invalid native sensor identity/qualification",
     )
     fault = native.get("fault_scenario")
-    require(type(fault) is str and fault in SENSOR_FAULTS, "invalid sensor fault")
+    require(
+        type(fault) is str and fault in (SPI_FAULTS if spi else SENSOR_FAULTS),
+        "invalid sensor fault",
+    )
     clock = native.get("virtual_time")
     require(
         isinstance(clock, dict)
@@ -764,7 +793,7 @@ def sensor_evidence(native):
             "invalid sensor fault effect",
         )
     return {
-        **SENSOR_LABELS,
+        **labels,
         "fault_scenario": fault,
         "fault_request": {"id": fault, "requested_virtual_ms": None if fault == "none" else 22},
         "sensor_evidence": copy.deepcopy(assertions),
@@ -964,7 +993,7 @@ def inspect_report(path: Path, sha: str) -> dict:
                     == json.dumps(expected, sort_keys=True),
                     "GPIO case summary differs from native evidence",
                 )
-            if planned["profile"] == SENSOR_PROFILE:
+            if planned["profile"] in SENSOR_PROFILES:
                 expected = sensor_evidence(native)
                 require(
                     json.dumps({k: case.get(k) for k in expected}, sort_keys=True)

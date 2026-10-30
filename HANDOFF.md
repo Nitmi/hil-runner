@@ -3,6 +3,42 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.14 on feat/spi-simulation-evidence adds explicit sim-runner0.9
+SPI0/LM74 integration. The0.13 notes below are historical and published.
+Read docs/simulation.md#spi-evidence-in-local-0140 before changing this path.
+
+- SPI uses an independent schema/profile and the exact28-file wheel inventory.
+  Keep all older inventories/profile pairs, including regenerated I2C/GPIO on0.9.
+  Copy bounded native assertions/errors/fault request/clock; native inspect owns
+  Q4/frame/readiness policy. Fail/unknown stops later cases with no retry/fallback.
+- Python3.11/3.13 each415 passed/one existing symlink skip; seven exact native
+  debugger Replay tests enabled. Ruff/format/uv lock/diff checks pass. Two cold
+  installed pairs each verify65 non-RECORD payload files; all15 schemas and old
+  instrument/waveform/load/thermal smokes pass. Shared protocol files match Trace.
+- Both installed matrices each7 suites/72 CLI/9 actual native attempts, zero
+  retries: normal pair, frozen/slip/wrong BUILD/timeout fail-stop, mixed SPI+I2C+
+  GPIO, and whole-suite preflight rejection before any backend. Complete process
+  cleanup, original artifacts and expected negative exits verified. Four normal
+  UARTs match native0.9;14 SPI sources retain48 model spans plus2 slip spans.
+- Current0.14 HIL->Trace compatibility checks16 saved instrument-domain cases.
+  Trace full/sample/empty/Markdown preserve failure/nulls and reject rehashed
+  contradictions. No hardware, lab SDK or native instrument evaluator runs.
+- InstalledPy3.13 warm one+seven medians: normal two-case inspect159.10ms,
+  frozen119.96ms, timeout118.10ms; Python allocation peaks~16.9-17.1MB.
+  Trace normal import7.46ms/387211B, inspect4.03ms/292667B. Not RSS/startup/
+  cold-I/O/SLA; measuring blocked process/network and original-source view opens.
+- Development pitfalls: tests are a package, so helper imports are relative;
+  inventory admission must also extend the exact28-file JSON-schema branch.
+  Parent -I source selection does not propagate to child CLI tests. Compatibility
+  bundle identity is producer_version, not runner_version; thermal scenario is
+  cleanup-unknown. Original failed checks retained. Helper resumes reuse only
+  matching saved argv/exit/raw hashes, never repeat a completed native attempt.
+- Evidence D:\Code\tmp\hil-trace-spi-0140-20261030. Independent audit273 protected
+  files unchanged. New candidates remain local/unsigned/unpublished; current
+  Toolkit0.36.1, Codex plugin, workstation locks and PATH stay unchanged.
+  Next prepare sim0.9/HIL0.14/Trace0.14 publication and Toolkit static integration;
+  do not rerun completed matrices or treat local evidence as release attestation.
+
 Current local0.13 on feat/sensor-simulation-evidence adds explicit sim-runner0.8
 sensor plan/report integration. The0.12 notes below are historical; it is already
 published. Read docs/simulation.md#sensor-evidence for the new local candidate.

@@ -1,5 +1,37 @@
 # Simulation suites
 
+## SPI evidence in local 0.14.0
+
+Explicit `nrf52840-spi-sensor-v1` plans require the exact 28-file sim-runner
+0.9.0 wheel (`spi_sensor.py` plus the fixed legacy SPI0/LM74 model). Existing
+0.2.0–0.8.0 inventories remain accepted for their own profiles; the 0.9 wheel
+also runs regenerated existing profiles. Unknown/mixed inventories and a SPI
+schema paired with I2C identity fail before execution. Old plans still need
+regeneration with the selected simulator version.
+
+Native inspect owns signed Q4, frame order, READY/BUILD, model schedule and fault
+policy. HIL copies the complete bounded `sensor_evidence`, including
+`frame_slip_observation`, native errors, unknown/null effects and clocks without
+reinterpreting them. A temperature-stuck or frame-slip result remains a failed
+normal regression and stops every subsequent case. There is no retry, recovery,
+hardware fallback or device lease. A whole-suite preflight rejection starts no
+emulator, including when an earlier selected plan was valid.
+
+SPI qualifications differ from I2C: `spi_electrical_behavior_verified=false`,
+and `frame_slip_semantics=one_monitor_Transmit_consumes_model_byte_not_wire_fault`.
+The discarded byte is a model control result, not an electrical measurement.
+Model Temperature/SPI ENABLE snapshots, guest raw words/signed Q4 (1/16 °C),
+requested RunFor boundaries and host UART window stay separate. No physical
+timing, chip-select, clock mode, sensor accuracy or complete coverage is claimed.
+
+`scripts/accept_spi_simulation.py` is a development-only installed-pair harness:
+normal pair, frozen/slipped/wrong-BUILD/timeout fail-stop, mixed SPI+I2C+GPIO,
+and invalid-script preflight. It binds native artifacts and Trace stdout spans,
+checks complete cleanup, queries full/sample/empty views, and rejects rehashed
+summary mutations. Its execution counts describe actual attempts, not retries.
+Both components remain independent standard-library runtimes. Release/source
+proof and formal Toolkit adoption are separate work; this is a local candidate.
+
 ## Experimental ESP-EMU WASM in 0.8.0
 
 HIL Runner 0.8.0 also accepts the fixed sim-runner 0.7.0 wheel

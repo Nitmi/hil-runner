@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.14.0** adds [SPI/LM74 simulation suites](docs/simulation.md#spi-evidence-in-local-0140)
+using the exact sim-runner 0.9.0 wheel. Signed fractional values, byte-frame
+fault observations and unknown/failing results remain native evidence; every
+failure stops later cases. Existing simulation and saved instrument domains remain supported.
+
 Local **0.13.0** adds [sensor simulation suites](docs/simulation.md#sensor-evidence):
 select the exact sim-runner 0.8.0 wheel for fixed nRF52840 TWI0/TMP103 plans.
 Signed temperature samples, model snapshots, injected faults and unknown results
