@@ -1,5 +1,33 @@
 # Simulation suites
 
+## RTC evidence in local 0.16.0
+
+`nrf52840-rtc-v1` uses the explicit RTC plan/report v1 schemas and exact
+sim-runner **0.11.0 / 32 runtime files** wheel. Previous inventories remain
+accepted for their own profiles. Regenerate legacy plans with 0.11 before
+selecting that wheel. The existing spec and CLI apply; no second executor exists.
+
+Native inspection owns READY/BUILD, PRESCALER, counter, COMPARE0 event clearing,
+next compare and IRQ policy. HIL projects bounded `rtc_evidence`, native errors,
+clock, fault request and unknown effects after native inspection. It does not
+recompute regression policy. `rtc-stop` and `rtc-irq-mask` at virtual 42 ms still
+fail the nominal regression and stop later cases, even if their effect is observed.
+Unknown assertions remain null. All cases preflight before any emulator starts.
+
+The fixed model uses 32768 Hz divided by PRESCALER=31, ten guest IRQ samples,
+162 virtual ms and four paused register observations at 40/80/120/160 ms. These
+are model declarations, not physical time measurements. LFCLK startup/drift,
+overflow/wrap, PPI and sleep/wakeup/power behavior are outside coverage. Preserve
+`model_coverage_complete=false`, `physical_timing_verified=false` and
+`low_power_behavior_verified=false`.
+
+Development-only `scripts/accept_rtc_simulation.py` qualifies installed HIL and
+Trace with a normal pair, stop/mask/wrong BUILD/timeout fail-stop, mixed RTC/SPI/
+watchdog and whole-suite preflight rejection. It checks raw bytes and cleanup,
+moved full/filtered/empty/Markdown views and rehashed contradiction rejection.
+No automatic retry, hardware access, lease, recovery or physical fallback occurs.
+Local qualification is separate from publication, attestation and Toolkit adoption.
+
 ## Watchdog evidence in local 0.15.0
 
 `nrf52840-watchdog-v1` and its independent watchdog plan/report v1 schemas require

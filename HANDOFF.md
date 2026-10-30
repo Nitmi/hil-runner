@@ -3,6 +3,42 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.16 on feat/rtc-simulation-evidence adds RTC evidence integration.
+Read docs/simulation.md#rtc-evidence-in-local-0160 before changing this path.
+This supersedes the local0.15 watchdog status below, which remains history.
+
+- Explicit RTC plan/report v1 requires sim-runner0.11 and its exact32-file
+  runtime inventory; older inventories stay accepted only for their profiles.
+  Regenerate legacy plans for the chosen wheel. Schema includes exact32 count.
+- Native inspect owns RTC policy. Copy bounded counter/event/IRQ evidence,
+  native failures/errors and nulls; no second policy engine. Observed stop/mask
+  faults still fail nominal regression. Whole-suite preflight, zero retries,
+  fail-stop, Windows Job ownership and capture cleanup remain intact.
+- Python3.11/3.13 each451 passed/one existing symlink skip; all seven exact
+  debugger Replay tests run. Ruff/format/offline lock/diff and two installed
+  package smokes pass. Current HIL0.16 producers retain all four saved instrument
+  domains;16 installed HIL-to-Trace compatibility cases pass.
+- Installed RTC integration has7 suites/72 CLI checks/9 native attempts per
+  Python: normal pair, stop/mask/wrong BUILD/timeout, RTC/SPI/watchdog mixed and
+  whole-suite preflight rejection. Total18 actual attempts, zero retries, complete
+  Job/capture cleanup.14 RTC sources bind48 model spans/68 guest samples/4 fault
+  markers; four normal UART captures match prior native RTC bytes exactly.
+- Python3.13 warm normal-pair inspect median220.60ms/Python peak17117376B;
+  one warmup, seven timings, separate allocation capture. Not startup, cold IO,
+  RSS or SLA.286 protected files and persistent raw PATH remain unchanged.
+- Evidence root D:/Code/tmp/hil-trace-rtc-0160-20261030. Source-bound final build
+  receipts/candidates and sealed audit are tracked there and in desktop/global
+  handoff; do not rerun successful native phases or mutate published Toolkit0.38.
+- Pitfalls: initial old SPI/I2C admission tests omitted0.11 and one sample-count
+  map omitted32; fixed at the inventory boundary, no runtime bypass. Native
+  READY/BUILD mismatch parses no guest samples, so independent audit expects68,
+  not88; raw reports retained, no emulator rerun. New helper copies must use
+  UTF-8 explicitly and discover assets versus dist paths before invoking them.
+  Failed development checks and host wrapper errors stay in qualification notes.
+- No public write, hardware, physical fallback, station/lock/PATH/plugin change.
+  Next prepare the sim0.11/HIL0.16/Trace0.16 release batch from qualified commits;
+  publication and Toolkit adoption remain separate authorization/scope steps.
+
 Current local0.15 on feat/watchdog-simulation-evidence adds explicit watchdog
 integration for sim-runner0.10. The0.14 SPI notes below are published history.
 Read docs/simulation.md#watchdog-evidence-in-local-0150 before editing this path.

@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.16.0** adds [RTC simulation suites](docs/simulation.md#rtc-evidence-in-local-0160)
+using the exact 32-file sim-runner 0.11.0 wheel. Native counter/COMPARE0 IRQ
+samples, stop/mask fault effects, failures and unknowns stay intact. Existing
+profiles retain whole-suite preflight, single execution and fail-stop behavior.
+
 Local **0.15.0** adds [watchdog simulation suites](docs/simulation.md#watchdog-evidence-in-local-0150)
 using the exact 30-file sim-runner 0.10.0 wheel. Native dual-channel feeding,
 reset/reboot evidence, failed nominal verdicts and unknown effects stay intact.
