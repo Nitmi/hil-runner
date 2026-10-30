@@ -1,5 +1,43 @@
 # Simulation suites
 
+## Watchdog evidence in local 0.15.0
+
+`nrf52840-watchdog-v1` and its independent watchdog plan/report v1 schemas require
+the exact **sim-runner 0.10.0 / 30 runtime files** wheel. All previous inventories
+remain accepted for their own profiles; 0.10 also accepts regenerated legacy
+profiles. Mismatched profile/schema, wheel inventory or plan input fails without
+fallback. Plans bind their original runner version and need regeneration when
+switching it. The existing simulation spec and CLI apply without a new executor.
+
+Native inspect retains ownership of READY/BUILD, two RR magic reloads, countdown,
+TIMER0 captures, model reset and guest reboot policy. HIL only projects bounded
+`watchdog_evidence` (boots/samples, model observations, reset records/callbacks),
+fault request/effect, errors, virtual clock and false qualifications after native
+inspection. Assertion failures and null evidence remain failures/unknown. A
+selected fault with observed effect is still a failed nominal regression, so
+later cases do not run. No automatic retry, recovery, hardware lease or fallback.
+
+All cases are preflighted before any emulator begins. A bad later plan prevents
+even the valid first plan from running. Host-process cleanup is independent of
+physical target cleanup; ownership/authorization fields remain false.
+
+The fixed scenario covers 82 virtual ms, 16 normal IRQ samples and four model
+snapshots. At 22 ms a fixed model control either stops feeding TIMER0 or disables
+the watchdog model. The former produces one native WDT reset plus reboot; the
+latter leaves guest timer output running with RUNSTATUS=0. These are model
+controls, not electrical faults or verified physical protection. CONFIG sleep/
+halt, timeout IRQ, reset reasons, real clocks and low-power behavior are outside
+coverage. Keep all native semantics/false claims, including
+`physical_reset_verified=false` and `low_power_behavior_verified=false`.
+
+Development helper `scripts/accept_watchdog_simulation.py` uses independent
+installed components: normal pair; feed-stop, watchdog-stop, wrong BUILD and
+timeout fail-stop; mixed watchdog/SPI/GPIO; whole-suite preflight rejection.
+It verifies raw hashes, cleanup, HIL projection and Trace full/sample/empty/
+Markdown views, and rejects rehashed summary/span contradictions. No per-run
+input digest is treated as an approval requirement. Release provenance and
+Toolkit adoption remain separate; this is a local candidate.
+
 ## SPI evidence in local 0.14.0
 
 Explicit `nrf52840-spi-sensor-v1` plans require the exact 28-file sim-runner

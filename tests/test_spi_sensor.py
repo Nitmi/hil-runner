@@ -25,12 +25,12 @@ def test_spi_requires_090_exact_inventory_and_matching_profile(inputs, version, 
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version != "0.9.0":
+    if version not in ("0.9.0", "0.10.0"):
         with pytest.raises(HilError, match="SPI sensor plans require"):
             sim.compile_plan(inputs)
     else:
         result = sim.compile_plan(inputs)
-        assert len(result["package_files"]) == 28
+        assert len(result["package_files"]) == (28 if version == "0.9.0" else 30)
         assert not result["component_processes_started"]
         assert result["cases"][0]["profile"] == sim.SPI_PROFILE
         native["profile"] = sim.SENSOR_PROFILE

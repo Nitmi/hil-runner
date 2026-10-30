@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.15.0** adds [watchdog simulation suites](docs/simulation.md#watchdog-evidence-in-local-0150)
+using the exact 30-file sim-runner 0.10.0 wheel. Native dual-channel feeding,
+reset/reboot evidence, failed nominal verdicts and unknown effects stay intact.
+Whole-suite preflight, single execution and fail-stop behavior remain unchanged.
+
 Local **0.14.0** adds [SPI/LM74 simulation suites](docs/simulation.md#spi-evidence-in-local-0140)
 using the exact sim-runner 0.9.0 wheel. Signed fractional values, byte-frame
 fault observations and unknown/failing results remain native evidence; every

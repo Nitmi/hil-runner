@@ -3,6 +3,41 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.15 on feat/watchdog-simulation-evidence adds explicit watchdog
+integration for sim-runner0.10. The0.14 SPI notes below are published history.
+Read docs/simulation.md#watchdog-evidence-in-local-0150 before editing this path.
+
+- Watchdog plan/report v1 requires the exact30-file inventory. Older version/
+  profile pairs remain accepted. Copy bounded native declarations, clock, errors,
+  fault request and unknown/null effects after native inspect; do not implement
+  a second firmware-policy engine. Fault observed does not mean regression passed.
+- Python3.11/3.13 each432 passed/one existing symlink skip, with all seven exact
+  debugger Replay tests enabled. Ruff/format/offline lock/diff pass. Each joint
+  cold install verifies65 non-RECORD payloads;15 schemas and saved instrument
+  smokes pass. Shared load/thermal protocols remain identical to Trace0.15.
+- Each installed Python:7 suites/72 CLI/9 actual native simulations, zero retries.
+  Normal pair and watchdog+SPI+GPIO pass. Feed-timer-stop, watchdog-stop, wrong
+  BUILD and timeout fail-stop; whole-suite preflight rejects before any backend.
+  Cleanup and artifact binding pass.14 watchdog sources retain48 model spans,
+  two reset/callback pairs and148 sample spans; four normal UARTs match sim0.10.
+- HIL0.15 -> Trace0.15 compatibility covers16 saved instrument cases, including
+  failures and unknown cleanup. Trace full/sample/empty/Markdown preserve native
+  failures/nulls and reject rehashed contradictions. No physical hardware/SDK.
+- InstalledPy3.13 warm one+seven medians: normal two-case inspect231.98ms,
+  feed-stop139.94ms, timeout180.69ms; Python allocation peaks16.9-17.1MB.
+  No process/network is allowed during measurement. Not RSS/startup/cold-I/O/SLA.
+- Pitfalls retained in raw logs: initial Trace long lines and test render alias
+  fixed; malformed sample spans require a dict guard before .get. The final Trace
+  wheel was rebuilt/reinstalled before the joint matrix; superseded initial
+  smoke evidence remains distinct. An offline performance helper was invoked
+  before its second-Python input existed; it failed without starting a backend,
+  then ran after matrix completion. Never rerun native cases for helper errors.
+- Evidence D:/Code/tmp/hil-trace-watchdog-0150-20261030;299 protected files and raw
+  persistent PATH values/types unchanged. Local candidates are not release
+  attestations. Current Toolkit/plugin0.37, station/locks/PATH remain unchanged.
+  Next prepare sim0.10/HIL0.15/Trace0.15 release materials; no publish authorized.
+  Physical timing/reset/low-power and complete model coverage stay false.
+
 Current local0.14 on feat/spi-simulation-evidence adds explicit sim-runner0.9
 SPI0/LM74 integration. The0.13 notes below are historical and published.
 Read docs/simulation.md#spi-evidence-in-local-0140 before changing this path.
