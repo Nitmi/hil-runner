@@ -29,6 +29,11 @@ This supersedes the local0.15 watchdog status below, which remains history.
 - Evidence root D:/Code/tmp/hil-trace-rtc-0160-20261030. Source-bound final build
   receipts/candidates and sealed audit are tracked there and in desktop/global
   handoff; do not rerun successful native phases or mutate published Toolkit0.38.
+- The numbers above describe the initial installed qualification. Final source
+  binding rejected CRLF worktree bytes against LF Git blobs (uv.lock first).
+  Restore only proven CRLF-to-LF differences to Git bytes before building. Keep
+  initial captures; final LF wheels receive separate cold/matrix qualification
+  with their own paths/receipts. Do not call them identical wheels until checked.
 - Pitfalls: initial old SPI/I2C admission tests omitted0.11 and one sample-count
   map omitted32; fixed at the inventory boundary, no runtime bypass. Native
   READY/BUILD mismatch parses no guest samples, so independent audit expects68,
