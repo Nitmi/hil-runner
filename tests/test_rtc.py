@@ -26,12 +26,12 @@ def test_rtc_requires_exact_0110_inventory(inputs, version, monkeypatch):
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version != "0.11.0":
+    if version not in ("0.11.0", "0.12.0"):
         with pytest.raises(HilError, match="RTC plans require"):
             sim.compile_plan(inputs)
     else:
         result = sim.compile_plan(inputs)
-        assert len(result["package_files"]) == 32
+        assert len(result["package_files"]) == len(sim.INVENTORIES[version])
         assert not result["component_processes_started"]
         jsonschema.validate(
             result,

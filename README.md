@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.17.0** adds [EGU simulation suites](docs/simulation.md#egu-evidence-in-local-0170)
+using the exact 34-file sim-runner 0.12.0 wheel. Paused PRE/POST register
+observations, guest IRQ samples and channel/mask fault evidence retain native
+verdicts and unknowns. Whole-suite preflight and fail-stop behavior remain intact.
+
 Local **0.16.0** adds [RTC simulation suites](docs/simulation.md#rtc-evidence-in-local-0160)
 using the exact 32-file sim-runner 0.11.0 wheel. Native counter/COMPARE0 IRQ
 samples, stop/mask fault effects, failures and unknowns stay intact. Existing

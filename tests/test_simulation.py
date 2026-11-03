@@ -616,7 +616,7 @@ def test_sensor_plan_requires_080_or_090_exact_wheel(inputs, version):
     for case in spec["cases"]:
         case["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version not in ("0.8.0", "0.9.0", "0.10.0", "0.11.0"):
+    if version not in ("0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0"):
         with pytest.raises(HilError, match="sensor plans require"):
             sim.compile_plan(inputs)
     else:

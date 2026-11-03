@@ -262,6 +262,36 @@ Parent timeouts retain S3 ROM, private Flash/eFuse and partial logs when present
 without inventing a native report or Trace source. Trace 0.6.0 keeps identity,
 clock/core declarations and model limits visible even in filtered queries.
 
+## EGU evidence in local 0.17.0
+
+Installed local qualification uses Sim0.12 source `d42d0f2` with an absolute
+per-run Renode history path. Two parallel Python installations pass while the
+shared Windows history file is exclusively locked. Each runs seven suites,
+72 CLI checks and nine native attempts; whole-suite preflight executes none.
+Earlier shared/relative-history failures remain separate failed evidence.
+
+The explicit `embedded-sim-runner.egu-plan.v1` profile requires the exact
+34-file sim-runner 0.12.0 inventory. Earlier profiles remain accepted with their
+historical inventories and the new inventory; no arbitrary package admission,
+hardware lease, physical fallback or per-case approval is introduced.
+
+Native inspection owns EGU task/ISR policy. HIL copies bounded `egu_evidence`,
+native errors, `fault_request` (`id`, zero-based `stimulus_index` 4 for either
+fault, null for nominal), clock declarations and unknown effects. Up to 32 guest
+samples and 18 model snapshots are retained. `egu-irq-mask` and
+`egu-channel-misroute` can have observed effects while nominal remains failed;
+either failure or unknown stops later cases. Whole-suite preflight precedes
+every backend attempt, with zero automatic retries and complete Job ownership.
+
+The 40 ms schedule, event bits, interrupt masks and ISR vector are simulation
+declarations. `model_coverage_complete`, `physical_timing_verified` and
+`ppi_routing_verified` remain false. The native producer checks guest firmware;
+HIL only verifies that its saved projection matches inspected native evidence.
+Trace 0.17.0 retains the raw EGU model/sample/fault spans, including bounded
+asynchronous lifecycle INFO within snapshots, without rerunning native policy.
+See `scripts/accept_egu_simulation.py` for the installed normal/fault/timeout,
+mixed EGU/RTC/watchdog, preflight and rehashed-summary rejection matrix.
+
 ## Sensor evidence
 
 HIL 0.13 selects only the exact 26-file sim-runner 0.8.0 wheel for native

@@ -3,6 +3,35 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.17 on feat/egu-simulation-evidence adds EGU integration;
+the local0.16 RTC notes below remain history. Read the EGU section in
+docs/simulation.md before changing this path.
+
+- EGU v1 requires the exact34-file sim-runner0.12 wheel. Legacy profiles also
+  accept0.12 with regenerated plans; never reuse a mismatched runner inventory.
+- Preserve native policy, false PPI/physical/model qualifications, failed fault
+  outcomes and unknowns. Fault request uses stimulus_index=4, not virtual time.
+  Nine tasks include a sentinel channel;18 PRE/POST observations bound raw bytes.
+- Whole-suite preflight, one execution per case, fail-stop, Windows Job ownership
+  and cleanup remain intact. The joint harness mixes EGU, RTC and watchdog.
+- Python3.11/3.13 full suites and static checks pass; final installed qualification
+  is tracked in D:/Code/tmp/hil-trace-egu-0170-20261103. Do not claim local candidate
+  hashes are attestation, publish, or switch Toolkit/station locks in this stage.
+- Final installed qualification: each Python has7 suites/72 CLI checks/9 native
+  attempts; zero retries, complete Job/capture cleanup.14 EGU sources preserve
+  216 model spans,84 guest samples and4 fault markers.16 saved instrument-domain
+  compatibility cases pass. HIL each472 tests/one existing platform skip; Trace
+  each639/two skips; updated Sim each456/no skips.
+- Parallel runs exposed Renode's shared AntShell history. Sim0.12 candidate
+  d42d0f2 fixes this with absolute per-run history; both final matrices pass while
+  the shared file is exclusively locked. Earlier17 attempts and two failed
+  relative-path controls remain history. No failure or INPUT_CHANGED is hidden.
+- Installed Python3.13 warm normal-pair inspect median169.79ms/Python peak
+  17149135B; one warmup/seven timings/separate allocation capture, no process or
+  network starts. Not RSS, cold IO, startup or SLA.413 protected files and raw
+  persistent PATH remain unchanged; the19B generated runtime extra was preserved
+  in evidence and removed from the pinned runtime inventory.
+
 Current local0.16 on feat/rtc-simulation-evidence adds RTC evidence integration.
 Read docs/simulation.md#rtc-evidence-in-local-0160 before changing this path.
 This supersedes the local0.15 watchdog status below, which remains history.
