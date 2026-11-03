@@ -24,7 +24,7 @@
       "const": "embedded-hil-runner.simulation-plan.v1"
     },
     "runner_version": {
-      "const": "0.17.0"
+      "const": "0.18.0"
     },
     "execution_kind": {
       "const": "simulation"
@@ -96,6 +96,10 @@
         {
           "minProperties": 34,
           "maxProperties": 34
+        },
+        {
+          "minProperties": 36,
+          "maxProperties": 36
         }
       ]
     },

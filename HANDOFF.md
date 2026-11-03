@@ -3,6 +3,28 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.18 on feat/gpiote-simulation-evidence adds explicit GPIOTE
+input/IRQ evidence from the exact36-file sim-runner0.13 wheel. Older profiles
+accept0.13 only through their explicit inventory gates; regenerate their plans.
+Native Sim policy remains authoritative. Preserve CONFIG/current-state, GPIO
+inputs, events, guest ISR, failed nominal faults and unknowns without inference.
+Whole-suite preflight, fail-stop, zero retries and process ownership stay intact.
+The installed matrix mixes GPIOTE, EGU and RTC, with timeout and wrong BUILD.
+Evidence root D:/Code/tmp/hil-trace-gpiote-0180-20261103; current phase is local
+qualification, not publication or Toolkit/station adoption. No physical fallback.
+Normalize only proven worktree CRLF drift before packaging, retaining unchanged
+raw fixtures. Shared Renode history must stay inaccessible during parallel runs;
+the previously fixed per-run absolute history paths must remain unchanged.
+
+Pre-commit checks: Python3.11/3.13 each495 passed/one existing symlink skip;
+seven native debugger Replay cases ran. Ruff/format/offline lock and isolated
+installed HIL smoke pass. A project-version mechanical edit accidentally changed
+the Ruff lock entry; offline lock correctly rejected the mismatched wheel.
+Restore only Ruff0.17, never skip wheel filename checking or upgrade dependencies
+to conceal this error. Original hil-lock exit2 remains in evidence. Trace smoke
+controller requires an explicit sibling-script path under Python -I; a wrapper
+import failure occurred before any Trace check and did not repeat HIL311 smoke.
+
 Current local0.17 on feat/egu-simulation-evidence adds EGU integration;
 the local0.16 RTC notes below remain history. Read the EGU section in
 docs/simulation.md before changing this path.

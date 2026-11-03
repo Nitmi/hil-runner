@@ -25,7 +25,7 @@ def test_spi_requires_090_exact_inventory_and_matching_profile(inputs, version, 
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version not in ("0.9.0", "0.10.0", "0.11.0", "0.12.0"):
+    if version not in ("0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0"):
         with pytest.raises(HilError, match="SPI sensor plans require"):
             sim.compile_plan(inputs)
     else:

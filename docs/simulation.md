@@ -262,6 +262,30 @@ Parent timeouts retain S3 ROM, private Flash/eFuse and partial logs when present
 without inventing a native report or Trace source. Trace 0.6.0 keeps identity,
 clock/core declarations and model limits visible even in filtered queries.
 
+## GPIOTE evidence in local 0.18.0
+
+The distinct `embedded-sim-runner.gpiote-plan.v1` profile requires the exact
+36-file sim-runner0.13 wheel. Regenerate earlier profiles for that wheel;
+historical inventories remain accepted only through their explicit gates.
+
+`gpiote_evidence` copies the inspected native declarations, errors and unknowns.
+Sim owns input/IRQ policy. Three channels select P0.11 rising, P0.12 falling
+and P1.3 toggle in40 virtual ms. Seven nominal ISR samples and18 PRE/POST
+snapshots retain event bits, INTEN, CONFIG, GPIO inputs and pin levels. Two
+faults mask channel2 or change its polarity to falling at stimulus_index4.
+Observed effects never convert a failed nominal regression to a passing suite.
+
+The complete suite is preflighted before execution, each case runs at most
+once, and any failure stops subsequent cases. Cleanup retains Job/capture
+evidence. HIL never substitutes guest fields for independent model evidence.
+No output-task, PORT/SENSE, PPI, electrical, physical timing, board or firmware
+qualification is implied. Model CONFIG.OUTINIT reads current channel state.
+
+Trace0.18 preserves raw model/ISR/fault spans across moved and filtered views.
+`scripts/accept_gpiote_simulation.py` tests installed normal/fault/wrong-BUILD/
+timeout, GPIOTE/EGU/RTC mixed suites and whole-suite preflight rejection.
+No Toolkit, plugin, persistent selection or station lock is changed here.
+
 ## EGU evidence in local 0.17.0
 
 Installed local qualification uses Sim0.12 source `d42d0f2` with an absolute

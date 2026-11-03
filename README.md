@@ -1,6 +1,12 @@
 # HIL Runner
 
-Local **0.17.0** adds [EGU simulation suites](docs/simulation.md#egu-evidence-in-local-0170)
+Local **0.18.0** adds [GPIOTE input/IRQ suites](docs/simulation.md#gpiote-evidence-in-local-0180)
+for sim-runner0.13. Whole-suite preflight, failure stopping and zero retries
+preserve native event/configuration/input/ISR evidence and unknowns. Observed
+mask/polarity faults retain failed nominal results. Simulation stays separate
+from physical hardware, authorization and Toolkit/workstation selection.
+
+Version **0.17.0** adds [EGU simulation suites](docs/simulation.md#egu-evidence-in-local-0170)
 using the exact 34-file sim-runner 0.12.0 wheel. Paused PRE/POST register
 observations, guest IRQ samples and channel/mask fault evidence retain native
 verdicts and unknowns. Whole-suite preflight and fail-stop behavior remain intact.

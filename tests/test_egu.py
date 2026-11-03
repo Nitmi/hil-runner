@@ -26,12 +26,12 @@ def test_egu_requires_exact_0120_inventory(inputs, version, monkeypatch):
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version != "0.12.0":
+    if version not in ("0.12.0", "0.13.0"):
         with pytest.raises(HilError, match="EGU plans require"):
             sim.compile_plan(inputs)
     else:
         result = sim.compile_plan(inputs)
-        assert len(result["package_files"]) == 34
+        assert len(result["package_files"]) == len(sim.INVENTORIES[version])
         assert not result["component_processes_started"]
         jsonschema.validate(
             result,
