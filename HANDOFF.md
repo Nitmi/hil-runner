@@ -3,6 +3,30 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.19 on feat/ppi-simulation-evidence adds bounded PPI evidence
+from the exact38-file sim-runner0.14 wheel. Older profile inventories remain
+explicit; regenerate legacy plans for0.14. Native Sim owns firmware policy.
+Preserve all14 register fields, channel/fork failures, unknown fault effects,
+raw guest samples and false routing/alignment/physical qualifications. No
+physical fallback, automatic retry, publication or Toolkit/station adoption.
+Joint acceptance mixes PPI/GPIOTE/EGU; wrong BUILD retains model observations
+without inventing guest samples. Evidence root:
+D:/Code/tmp/hil-trace-ppi-0190-20261104. Local qualification is in progress.
+
+Pre-commit Python3.11/3.13 each520 tests pass/one platform skip, including7
+native debugger Replay cases. Trace has707 passing tests/two platform skips.
+Both isolated installed package smokes pass (Trace28 runtime files/138 CLIs).
+The focused HIL test caught a
+schema oneOf missing38 despite correct runtime inventory; add the exact38
+alternative, never weaken the inventory check. The full HIL run caught a legacy
+SPI test allowlist missing0.14; fix that explicit capability expectation.
+An initial Trace mutation test wrote its existing value; use XOR so the negative
+control actually changes evidence. Original failures remain in command receipts.
+Package smoke under -I needs the reviewed explicit scripts/runpy bootstrap.
+Lock shared Renode history exclusively during parallel native acceptance and
+verify absolute per-run history files. Normalize only proven worktree CRLF
+drift, preserving unchanged raw fixtures. Windows rg globs belong in -g filters.
+
 Current local0.18 on feat/gpiote-simulation-evidence adds explicit GPIOTE
 input/IRQ evidence from the exact36-file sim-runner0.13 wheel. Older profiles
 accept0.13 only through their explicit inventory gates; regenerate their plans.

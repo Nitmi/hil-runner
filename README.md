@@ -185,3 +185,10 @@ power control, daemon/socket or remote lease broker.
 OS primitives follow the Python documentation for
 [Windows nonblocking region locks](https://docs.python.org/3/library/msvcrt.html#msvcrt.locking)
 and [Unix flock](https://docs.python.org/3/library/fcntl.html#fcntl.flock).
+
+## Local 0.19 PPI evidence support
+
+The fixed Sim0.14 PPI route adds channel-disable/fork-misroute diagnostics to
+typed suites while preserving failed and unknown native outcomes. See
+[simulation evidence](docs/simulation.md). Whole-suite preflight, fail-stop and
+zero retries remain; no physical fallback or per-run manual prompt is added.

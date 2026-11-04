@@ -347,3 +347,32 @@ before validating summaries; page size does not reduce verification cost.
 `scripts/accept_sensor_simulation.py` is a development-only installed-wheel
 acceptance harness, with sequential successes, faults, timeout, mixed profiles,
 preflight rejection and coherently rehashed summary-tamper checks.
+# PPI evidence in local 0.19.0
+
+The explicit `nrf52840-ppi-v1` profile requires the exact38-file sim-runner0.14.0
+wheel. Earlier inventories cannot accept its schema. Existing profiles also
+admit0.14 through their explicit version/inventory gates; regenerate their native
+plans with that version before combining them in a suite.
+
+Native Sim policy remains authoritative. HIL retains the sixteen paused model
+observations (fourteen registers each), GPIO sample declarations, fault request,
+effect, native errors, virtual clock and false qualification labels without
+reinterpreting them. Channel-disable and fork-misroute effects remain failed
+nominal regressions. Wrong BUILD may retain model observations but no qualified
+guest samples; timeout evidence may remain absent. Unknowns stay unknown.
+
+Run `scripts/accept_ppi_simulation.py` only in a development environment containing
+the installed candidates, with explicit `--prefix`, `--sim-wheel`, `--plans` and
+a fresh `--output`. It tests normal pairs, both faults, wrong BUILD, host timeout,
+a PPI/GPIOTE/EGU mixed suite and whole-suite preflight failure. After a failed
+case the next case must stay unstarted; no retries or physical fallback exist.
+Each native report is inspected before being copied into the HIL summary.
+
+Managed process ownership/Job cleanup, fixed package inventories and hash-bound
+inputs remain unchanged. PPI tasks in the pinned Renode model are deferred to a
+synced state: no event alignment, physical timing or broad PPI qualification is
+claimed. No board leases or component hardware commands participate.
+
+Acceptance must measure host suite/correlate/saved-view costs separately from
+virtual time and check cleanup on timeout. Runtime dependencies stay empty;
+native bounded settings and report/timeline byte limits remain enforced.
