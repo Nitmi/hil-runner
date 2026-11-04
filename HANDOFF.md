@@ -3,6 +3,22 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+Current local0.20 on feat/uarte-dma-simulation-evidence adds fixed UARTE RX
+from the exact40-file Sim0.15 wheel. Preserve all12 descriptor/event/SRAM
+fields, guest word/amount/guards, failed nominal faults and unknown identity.
+The native runner owns policy; no physical fallback or retry. Older profiles
+admit0.15 only through explicit inventories with regenerated plans. Whole-suite
+preflight, Windows Job ownership and complete capture cleanup remain required.
+Evidence D:/Code/tmp/hil-trace-uarte-dma-0200-20261104; qualification in progress.
+Reuse previous12 native results for offline coverage; installed orchestration
+uses three new bounded cases per Python, not a rerun of the old firmware matrix.
+No publication, Toolkit/plugin/station/PATH change or physical access.
+
+Read helpers by actual filenames and bounded source sections. Initial auxiliary
+reads guessed a nonexistent scaffold.py / HIL package_smoke.py and enumerated
+pytest temp trees too broadly; no product failure or mutation. The real HIL
+installed helper is scripts/smoke_installed.py. Preserve prior raw fixtures.
+
 Current local0.19 on feat/ppi-simulation-evidence adds bounded PPI evidence
 from the exact38-file sim-runner0.14 wheel. Older profile inventories remain
 explicit; regenerate legacy plans for0.14. Native Sim owns firmware policy.

@@ -26,12 +26,12 @@ def test_gpiote_requires_exact_0130_inventory(inputs, version, monkeypatch):
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version not in ("0.13.0", "0.14.0"):
+    if version not in ("0.13.0", "0.14.0", "0.15.0"):
         with pytest.raises(HilError, match="GPIOTE plans require"):
             sim.compile_plan(inputs)
     else:
         result = sim.compile_plan(inputs)
-        assert len(result["package_files"]) == (36 if version == "0.13.0" else 38)
+        assert len(result["package_files"]) == len(sim.INVENTORIES[version])
         assert not result["component_processes_started"]
         jsonschema.validate(
             result,

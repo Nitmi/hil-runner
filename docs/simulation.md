@@ -376,3 +376,37 @@ claimed. No board leases or component hardware commands participate.
 Acceptance must measure host suite/correlate/saved-view costs separately from
 virtual time and check cleanup on timeout. Runtime dependencies stay empty;
 native bounded settings and report/timeline byte limits remain enforced.
+
+## UARTE EasyDMA RX in local 0.20.0
+
+`nrf52840-uarte-dma-v1` requires the exact 40-file sim-runner 0.15.0 wheel.
+Other wheel inventories cannot accept this schema. Older profiles admit 0.15
+only through their explicit gates; regenerate native plans for that wheel.
+This domain stays separate from hardware leases and never falls back to a board.
+
+Native Sim owns firmware policy and raw-result inspection. HIL copies its
+descriptor (PTR/MAXCNT/AMOUNT), RX-event and guarded-SRAM observations and
+guest sequence/word/amount/guard declarations. Sixteen PRE/POST snapshots each
+contain twelve numeric fields. The fixed total virtual budget is 40 ms.
+`rx-short-buffer` and `rx-pointer-shift` are descriptor controls at index 4,
+not wire faults. A confirmed effect retains a failed nominal regression.
+Wrong BUILD may retain model observations but no qualified guest samples;
+missing assertions and unknown effects remain absent or unknown.
+
+Use `scripts/accept_uarte_simulation.py` only as a development helper, with
+explicit installed `--prefix`, fixed `--sim-wheel`, `--plans` and a fresh
+`--output`. It expects normal-plan.json, rx-short-buffer-plan.json and
+rx-pointer-shift-plan.json. It checks a successful suite, both failure-stop
+controls and a whole-suite preflight rejection. Each run has fresh ownership
+and hash-bound inputs; no per-run manual confirmation is added.
+
+Each native result is inspected before copying its summary. Saved HIL inspection
+compares copied fields with the adjacent native evidence without starting Sim.
+Trace import/query/report preserves the same native outcome and raw bindings.
+No physical DMA, UART electrical behavior, event alignment, timing or complete
+model qualification is added. Guard words detect modeled corruption; they do
+not prevent writes or establish silicon memory protection.
+
+Runtime dependencies remain empty. Retain the existing file/case/process bounds,
+Job and capture cleanup. Measure suite host time and warm offline inspection
+separately from virtual time, cold I/O, interpreter startup and RSS.

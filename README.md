@@ -192,3 +192,11 @@ The fixed Sim0.14 PPI route adds channel-disable/fork-misroute diagnostics to
 typed suites while preserving failed and unknown native outcomes. See
 [simulation evidence](docs/simulation.md). Whole-suite preflight, fail-stop and
 zero retries remain; no physical fallback or per-run manual prompt is added.
+
+## Local 0.20 UARTE EasyDMA RX support
+
+Typed suites accept the exact Sim0.15 wheel and its fixed UARTE RX profile.
+Preserve descriptor, event, guarded SRAM and guest evidence, including failed
+short-buffer/pointer-shift controls and unknown identity. See
+[simulation evidence](docs/simulation.md#uarte-easydma-rx-in-local-0200).
+Whole-suite preflight and process cleanup remain mandatory, with no retries.
