@@ -13,6 +13,12 @@ D:/Code/tmp/hil-trace-ecb-0210-20261120. Full regression and packaging in progre
 final completion is recorded externally without changing the source-bound commit.
 Pitfall: initial Trace sibling test import retained ecb_dma suffix; fixed to
 ecb before passing focused tests. Keep prior failure output, never overwrite it.
+Final audit found the new development-only acceptance helper's Unicode folder
+label was decoded through Windows cp936 by a mechanical source-copy script.
+Use explicit UTF-8 for all host script reads; the helper now uses an ASCII label.
+Existing six native captures remain valid under their recorded original paths.
+This label-only correction does not change any installed wheel/runtime bytes;
+retain prior tests/native results and bind the corrected source archive separately.
 
 Current local0.20 on feat/uarte-dma-simulation-evidence adds fixed UARTE RX
 from the exact40-file Sim0.15 wheel. Preserve all12 descriptor/event/SRAM

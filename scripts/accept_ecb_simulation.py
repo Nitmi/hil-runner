@@ -73,7 +73,7 @@ def accept(args):
             name + "-plan", "hil_runner", ["simulation", "plan", spec, "--output", plan, "--json"]
         )
         assert not prepared["component_processes_started"]
-        directory = output / (name + " suite 楠屾敹")
+        directory = output / (name + " suite evidence")
         success = all(s == "passed" for s in statuses)
         result = call(
             name + "-run",
