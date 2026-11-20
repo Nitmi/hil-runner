@@ -26,7 +26,7 @@ def test_ppi_requires_exact_0140_inventory(inputs, version, monkeypatch):
     for row in spec["cases"]:
         row["plan"]["sha256"] = digest(path.read_bytes())
     inputs.write_text(json.dumps(spec))
-    if version not in ("0.14.0", "0.15.0"):
+    if version not in ("0.14.0", "0.15.0", "0.16.0"):
         with pytest.raises(HilError, match="PPI plans require"):
             sim.compile_plan(inputs)
     else:

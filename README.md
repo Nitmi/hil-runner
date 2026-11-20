@@ -1,5 +1,10 @@
 # HIL Runner
 
+Local **0.21.0** adds [ECB AES128 simulation suites](docs/simulation-ecb.md)
+with the exact Sim Runner 0.16.0 wheel. Native samples, 32-field snapshots,
+fault effects, failures and unknowns survive fail-stop orchestration. Fixed
+public known-answer vectors do not establish physical crypto or security qualification.
+
 Local **0.18.0** adds [GPIOTE input/IRQ suites](docs/simulation.md#gpiote-evidence-in-local-0180)
 for sim-runner0.13. Whole-suite preflight, failure stopping and zero retries
 preserve native event/configuration/input/ISR evidence and unknowns. Observed

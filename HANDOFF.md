@@ -3,6 +3,17 @@
 Read this file and AGENTS.md before a new task. The active workspace HANDOFF.md
 and desktop development plan track cross-repository progress.
 
+2026-11-20 local0.21 ECB integration on feat/ecb-simulation-evidence.
+Exact Sim0.16 / 42-file inventory; native ECB schema and bounded declarations
+are preserved without policy replay. Reuse13 sealed Sim results offline;
+installed acceptance adds normal + plaintext-stuck + context-redirect once
+per Python, with fail-stop/preflight and cleanup checks. No hardware,
+publication, Toolkit/plugin/workstation/PATH changes. Execution receipts:
+D:/Code/tmp/hil-trace-ecb-0210-20261120. Full regression and packaging in progress;
+final completion is recorded externally without changing the source-bound commit.
+Pitfall: initial Trace sibling test import retained ecb_dma suffix; fixed to
+ecb before passing focused tests. Keep prior failure output, never overwrite it.
+
 Current local0.20 on feat/uarte-dma-simulation-evidence adds fixed UARTE RX
 from the exact40-file Sim0.15 wheel. Preserve all12 descriptor/event/SRAM
 fields, guest word/amount/guards, failed nominal faults and unknown identity.

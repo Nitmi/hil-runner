@@ -625,6 +625,7 @@ def test_sensor_plan_requires_080_or_090_exact_wheel(inputs, version):
         "0.13.0",
         "0.14.0",
         "0.15.0",
+        "0.16.0",
     ):
         with pytest.raises(HilError, match="sensor plans require"):
             sim.compile_plan(inputs)

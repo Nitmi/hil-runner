@@ -59,6 +59,7 @@ EGU_MODULES = RTC_MODULES | {"egu.py", "assets/nrf52840-egu.repl"}
 GPIOTE_MODULES = EGU_MODULES | {"gpiote.py", "assets/nrf52840-gpiote.repl"}
 PPI_MODULES = GPIOTE_MODULES | {"ppi.py", "assets/nrf52840-ppi.repl"}
 UARTE_MODULES = PPI_MODULES | {"uarte_dma.py", "assets/nrf52840-uarte-dma.repl"}
+ECB_MODULES = UARTE_MODULES | {"ecb.py", "assets/nrf52840-ecb.repl"}
 INVENTORIES = {
     "0.2.0": MODULES,
     "0.3.0": FLASH_MODULES,
@@ -74,7 +75,22 @@ INVENTORIES = {
     "0.13.0": GPIOTE_MODULES,
     "0.14.0": PPI_MODULES,
     "0.15.0": UARTE_MODULES,
+    "0.16.0": ECB_MODULES,
 }
+ECB_PROFILE = "nrf52840-ecb-v1"
+ECB_FAULTS = ("none", "plaintext-stuck", "context-redirect")
+ECB_LABELS = {
+    "model_coverage_complete": False,
+    "physical_timing_verified": False,
+    "event_time_alignment_verified": False,
+    "crypto_hardware_verified": False,
+    "cryptographic_security_qualified": False,
+    "side_channel_resistance_verified": False,
+    "ecb_semantics": "Renode_1.17_fixed_AES128_block_NIST_F1_1_not_security_certification",
+    "fault_semantics": "fixed_monitor_plaintext_repeat_or_valid_alternate_context_pointer",
+    "observation_semantics": "paused_model_SRAM_guest_handshake_not_encryption_latency",
+}
+
 UARTE_PROFILE = "nrf52840-uarte-dma-v1"
 UARTE_FAULTS = ("none", "rx-short-buffer", "rx-pointer-shift")
 UARTE_LABELS = {
@@ -187,6 +203,7 @@ PROFILES = {
     "embedded-sim-runner.watchdog-plan.v1": (WATCHDOG_PROFILE, "renode"),
     "embedded-sim-runner.rtc-plan.v1": (RTC_PROFILE, "renode"),
     "embedded-sim-runner.egu-plan.v1": (EGU_PROFILE, "renode"),
+    "embedded-sim-runner.ecb-plan.v1": (ECB_PROFILE, "renode"),
     "embedded-sim-runner.uarte-dma-plan.v1": (UARTE_PROFILE, "renode"),
     "embedded-sim-runner.ppi-plan.v1": (PPI_PROFILE, "renode"),
     "embedded-sim-runner.gpiote-plan.v1": (GPIOTE_PROFILE, "renode"),
@@ -264,7 +281,7 @@ def _package(data: bytes) -> dict[str, bytes]:
             for version in INVENTORIES
             if f"embedded_sim_runner-{version}.dist-info/METADATA" in archive.namelist()
         ]
-        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.15.0 wheel")
+        require(len(versions) == 1, "requires sim-runner 0.2.0 through 0.16.0 wheel")
         version = versions[0]
         modules = INVENTORIES[version]
         metadata = f"embedded_sim_runner-{version}.dist-info/"
@@ -373,8 +390,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "Flash plans require sim-runner 0.3.0 through 0.15.0",
+            "Flash plans require sim-runner 0.3.0 through 0.16.0",
         )
         require(
             profile[0] != GPIO_PROFILE
@@ -392,8 +410,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "GPIO plans require sim-runner 0.4.0 through 0.15.0",
+            "GPIO plans require sim-runner 0.4.0 through 0.16.0",
         )
         require(
             profile[0] != S3_PROFILE
@@ -410,8 +429,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "S3 plans require sim-runner 0.5.0 through 0.15.0",
+            "S3 plans require sim-runner 0.5.0 through 0.16.0",
         )
         require(
             profile[0] != FAULT_PROFILE
@@ -427,8 +447,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "fault plans require sim-runner 0.6.0 through 0.15.0",
+            "fault plans require sim-runner 0.6.0 through 0.16.0",
         )
         require(
             profile[0] != WASM_PROFILE
@@ -443,8 +464,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "WASM plans require sim-runner 0.7.0 through 0.15.0",
+            "WASM plans require sim-runner 0.7.0 through 0.16.0",
         )
         require(
             profile[0] != SENSOR_PROFILE
@@ -458,8 +480,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "sensor plans require sim-runner 0.8.0 through 0.15.0",
+            "sensor plans require sim-runner 0.8.0 through 0.16.0",
         )
         require(
             profile[0] != SPI_PROFILE
@@ -472,8 +495,9 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "SPI sensor plans require sim-runner 0.9.0 through 0.15.0",
+            "SPI sensor plans require sim-runner 0.9.0 through 0.16.0",
         )
         require(
             profile[0] != WATCHDOG_PROFILE
@@ -485,31 +509,37 @@ def compile_plan(spec_path: Path, expected=None) -> dict:
                 GPIOTE_MODULES,
                 PPI_MODULES,
                 UARTE_MODULES,
+                ECB_MODULES,
             ),
-            "watchdog plans require sim-runner 0.10.0 through 0.15.0",
+            "watchdog plans require sim-runner 0.10.0 through 0.16.0",
         )
         require(
             profile[0] != RTC_PROFILE
-            or set(files) in (RTC_MODULES, EGU_MODULES, GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES),
-            "RTC plans require sim-runner 0.11.0 through 0.15.0",
+            or set(files)
+            in (RTC_MODULES, EGU_MODULES, GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES, ECB_MODULES),
+            "RTC plans require sim-runner 0.11.0 through 0.16.0",
         )
         require(
             profile[0] != EGU_PROFILE
-            or set(files) in (EGU_MODULES, GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES),
-            "EGU plans require sim-runner 0.12.0 through 0.15.0",
+            or set(files) in (EGU_MODULES, GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES, ECB_MODULES),
+            "EGU plans require sim-runner 0.12.0 through 0.16.0",
         )
         require(
             profile[0] != GPIOTE_PROFILE
-            or set(files) in (GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES),
-            "GPIOTE plans require sim-runner 0.13.0 through 0.15.0",
+            or set(files) in (GPIOTE_MODULES, PPI_MODULES, UARTE_MODULES, ECB_MODULES),
+            "GPIOTE plans require sim-runner 0.13.0 through 0.16.0",
         )
         require(
-            profile[0] != PPI_PROFILE or set(files) in (PPI_MODULES, UARTE_MODULES),
-            "PPI plans require sim-runner 0.14.0 or 0.15.0",
+            profile[0] != PPI_PROFILE or set(files) in (PPI_MODULES, UARTE_MODULES, ECB_MODULES),
+            "PPI plans require sim-runner 0.14.0 through 0.16.0",
         )
         require(
-            profile[0] != UARTE_PROFILE or set(files) == UARTE_MODULES,
-            "UARTE plans require sim-runner 0.15.0",
+            profile[0] != UARTE_PROFILE or set(files) in (UARTE_MODULES, ECB_MODULES),
+            "UARTE plans require sim-runner 0.15.0 or 0.16.0",
+        )
+        require(
+            profile[0] != ECB_PROFILE or set(files) == ECB_MODULES,
+            "ECB plans require sim-runner 0.16.0",
         )
         for key, value in {
             "execution_kind": "simulation",
@@ -743,6 +773,8 @@ def run(path: Path, sha: str, output: Path) -> dict:
                 state.update(rtc_evidence(value))
             if row["profile"] == EGU_PROFILE:
                 state.update(egu_evidence(value))
+            if row["profile"] == ECB_PROFILE:
+                state.update(ecb_evidence(value))
             if row["profile"] == UARTE_PROFILE:
                 state.update(uarte_evidence(value))
             if row["profile"] == PPI_PROFILE:
@@ -951,6 +983,55 @@ def gpio_evidence(native):
             virtual_time=copy.deepcopy(native.get("virtual_time")),
         )
     return result
+
+
+def ecb_evidence(native):
+    """Copy inspected bounded ECB declarations without replaying native policy."""
+    require(
+        native.get("schema_version") == "embedded-sim-runner.ecb-report.v1"
+        and native.get("profile") == ECB_PROFILE
+        and all(type(native.get(k)) is type(v) and native[k] == v for k, v in ECB_LABELS.items()),
+        "invalid native ECB identity/qualification",
+    )
+    fault, clock, assertions = (
+        native.get(k) for k in ("fault_scenario", "virtual_time", "assertions")
+    )
+    require(type(fault) is str and fault in ECB_FAULTS, "invalid ECB fault")
+    require(
+        isinstance(clock, dict)
+        and set(clock) == {"domain", "requested_ms", "completed"}
+        and clock["domain"] == "renode_emulation"
+        and type(clock["requested_ms"]) is int
+        and clock["requested_ms"] == 40
+        and type(clock["completed"]) is bool,
+        "invalid ECB clock",
+    )
+    require(assertions is None or isinstance(assertions, dict), "invalid ECB evidence")
+    require(not native["ok"] or isinstance(assertions, dict), "passing ECB lacks evidence")
+    if assertions is not None:
+        require(
+            type(assertions.get("nominal_regression_passed")) is bool
+            and isinstance(assertions.get("samples"), list)
+            and len(assertions["samples"]) <= 16
+            and isinstance(assertions.get("model_observations"), list)
+            and len(assertions["model_observations"]) <= 16,
+            "invalid bounded ECB declarations",
+        )
+        effect = assertions.get("fault")
+        require(
+            isinstance(effect, dict)
+            and effect.get("id") == fault
+            and (effect.get("effect_observed") is None or type(effect["effect_observed"]) is bool),
+            "invalid ECB effect",
+        )
+    return {
+        **ECB_LABELS,
+        "fault_scenario": fault,
+        "fault_request": {"id": fault, "stimulus_index": None if fault == "none" else 4},
+        "ecb_evidence": copy.deepcopy(assertions),
+        "native_errors": copy.deepcopy(native.get("errors")),
+        "virtual_time": copy.deepcopy(clock),
+    }
 
 
 def uarte_evidence(native):
@@ -1522,9 +1603,12 @@ def inspect_report(path: Path, sha: str) -> dict:
                 GPIOTE_PROFILE,
                 PPI_PROFILE,
                 UARTE_PROFILE,
+                ECB_PROFILE,
             ):
                 expected = (
-                    uarte_evidence(native)
+                    ecb_evidence(native)
+                    if planned["profile"] == ECB_PROFILE
+                    else uarte_evidence(native)
                     if planned["profile"] == UARTE_PROFILE
                     else ppi_evidence(native)
                     if planned["profile"] == PPI_PROFILE

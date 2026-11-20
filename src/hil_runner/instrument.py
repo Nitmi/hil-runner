@@ -353,6 +353,7 @@ def build(spec_blob, blobs, producer_version):
             "0.18.0",
             "0.19.0",
             "0.20.0",
+            "0.21.0",
         ),
         "unsupported HIL instrument producer",
     )
